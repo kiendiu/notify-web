@@ -1,0 +1,100 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <div class="header-main">
+      <div class="header-left">
+        <div class="title-block">
+          <h1 class="header-title">Admin Notify</h1>
+          <p class="header-subtitle">ENTERPRISE TIER</p>
+        </div>
+        <div class="divider"></div>
+        <h2 class="header-page-title">Trung tâm thông báo</h2>
+      </div>
+
+      <div class="header-center">
+        <div class="search-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" class="search-input" placeholder="Tìm kiếm thông báo..." />
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="divider"></div>
+        <div class="user-profile">
+          <div class="user-avatar-icon">
+            <i class="fas fa-user"></i>
+          </div>
+          <span class="user-name">Nguyễn Kiên</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="dashboard-tabbar">
+    <div class="tab-groups">
+      <button class="tab-item" [class.active]="currentTab() === 'dashboard'" (click)="selectTab('dashboard')">
+        <i class="fas fa-th-large"></i> Trang chủ
+      </button>
+      <button class="tab-item" [class.active]="currentTab() === 'notification'" (click)="selectTab('notification')">
+        <i class="fas fa-paper-plane"></i> Thông báo
+      </button>
+      <button class="tab-item" [class.active]="currentTab() === 'campaigns'" (click)="selectTab('campaigns')">
+        <i class="fas fa-chart-bar"></i> Chiến dịch
+      </button>
+      <button class="tab-item" [class.active]="currentTab() === 'settings'" (click)="selectTab('settings')">
+        <i class="fas fa-cog"></i> Cài đặt
+      </button>
+    </div>
+
+    <button class="logout-btn-tab" (click)="openLogoutModal()">
+      <i class="fas fa-sign-out-alt"></i> Đăng xuất
+    </button>
+  </nav>
+
+  <main class="dashboard-content">
+    @switch (currentTab()) {
+      @case ('dashboard') {
+        <div class="tab-content">
+          <p>Trang chủ</p>
+        </div>
+      }
+      @case ('campaigns') {
+        <div class="tab-content">
+          <p>Danh sách chiến dịch</p>
+        </div>
+      }
+      @case ('notification') {
+        <div class="tab-content">
+          <p>Danh sách thông báo</p>
+        </div>
+      }
+      @case ('settings') {
+        <div class="tab-content">
+          <p>Cài đặt hệ thống.</p>
+        </div>
+      }
+    }
+  </main>
+
+  @if (showLogoutModal()) {
+    <div class="modal-overlay" (click)="closeLogoutModal()">
+      <div class="logout-modal" (click)="$event.stopPropagation()">
+        <div class="modal-icon">🔒</div>
+        <h2>Xác nhận Đăng xuất</h2>
+        <p>Bạn có chắc chắn muốn đăng xuất không? Phiên làm việc của bạn sẽ kết thúc và bạn sẽ cần đăng nhập lại để tiếp tục quản trị hệ thống.</p>
+
+        <div class="modal-actions">
+          <button class="btn-logout" (click)="logout()">
+            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+          </button>
+          <button class="btn-cancel" (click)="closeLogoutModal()">
+            Hủy
+          </button>
+        </div>
+
+        <footer class="modal-footer">
+          ENTERPRISE SECURITY PROTOCOL V4.2
+        </footer>
+      </div>
+    </div>
+  }
+</div>

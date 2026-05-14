@@ -1,0 +1,349 @@
+@use "sass:color";
+
+$primary-blue: #00338d;
+$tab-active-blue: #0056b3;
+$text-main: #1a1a1a;
+$text-muted: #5f6368;
+$text-gray-light: #9ca3af;
+$border-color: #e5e7eb;
+$search-bg: #f1f3f9;
+$logout-red: #e11d48;
+$bg-main: #f8f9fa;
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-container {
+  height: 100vh;
+  background-color: $bg-main;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  position: relative;
+
+  .dashboard-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background-color: #fff;
+    border-bottom: 1px solid $border-color;
+    padding: 0 12px;
+    @include flex-center;
+    z-index: 50;
+
+    .header-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+
+      .header-left {
+        @include flex-center;
+        gap: 20px;
+
+        .title-block {
+          line-height: 1.1;
+          .header-title {
+            color: $primary-blue;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.025em;
+          }
+          .header-subtitle {
+            color: $text-gray-light;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0;
+            margin-top: 2px;
+            letter-spacing: 0.05em;
+          }
+        }
+
+        .divider {
+          width: 1px;
+          height: 35px;
+          background-color: $border-color;
+        }
+
+        .header-page-title {
+          color: $primary-blue;
+          font-size: 1.125rem;
+          font-weight: 600;
+          margin: 0;
+        }
+      }
+
+      .header-center {
+        flex: 1;
+        max-width: 450px;
+        margin: 0 32px;
+
+        .search-wrapper {
+          position: relative;
+          
+          .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: $text-gray-light;
+            font-size: 14px;
+          }
+
+          .search-input {
+            width: 80%;
+            padding: 10px 16px 10px 40px;
+            background-color: $search-bg;
+            border: 1px solid transparent;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s ease;
+
+            &:focus {
+              background-color: #fff;
+              border-color: rgba($primary-blue, 0.3);
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+          }
+        }
+      }
+
+      .header-right {
+        @include flex-center;
+        gap: 18px;
+
+        .divider {
+          width: 1px;
+          height: 25px;
+          background-color: $border-color;
+        }
+
+        .user-profile {
+          @include flex-center;
+          gap: 12px;
+
+          .user-avatar-icon {
+            width: 36px;
+            height: 36px;
+            background-color: #f0f2f5;
+            border: 1.5px solid $primary-blue;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: $primary-blue;
+          }
+
+          .user-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1f2937;
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Tabbar (Cố định)
+  .dashboard-tabbar {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: #fff;
+    border-bottom: 1px solid $border-color;
+    padding: 0 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    z-index: 40;
+
+    .tab-groups {
+      display: flex;
+      //gap: 3px;
+
+      .tab-item {
+        position: relative;
+        padding: 16px 20px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $text-muted;
+        @include flex-center;
+        gap: 10px;
+        transition: all 0.2s ease;
+
+        i {
+          font-size: 16px;
+          opacity: 0.7;
+        }
+
+        &:hover {
+          color: $tab-active-blue;
+          background-color: #f9fafb;
+        }
+
+        &.active {
+          color: $tab-active-blue;
+          font-weight: 600;
+
+          i { opacity: 1; }
+
+          &::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: $tab-active-blue;
+          }
+        }
+      }
+    }
+
+    .logout-btn-tab {
+      background: none;
+      border: none;
+      color: $logout-red;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      @include flex-center;
+      gap: 8px;
+      padding: 16px 0;
+      transition: opacity 0.2s;
+
+      &:hover {
+        opacity: 0.7;
+      }
+    }
+  }
+
+  // 3. Main Content (Khu vực cuộn duy nhất)
+  .dashboard-content {
+    margin-top: 134px;
+    height: calc(100vh - 134px);
+    overflow-y: auto;
+    padding: 32px;
+
+    .tab-content {
+      animation: fadeIn 0.3s ease-out;
+    }
+  }
+}
+
+// --- Logout Modal (Overlay) ---
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.logout-modal {
+  background: white;
+  border-radius: 1rem;
+  padding: 40px;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+
+  .modal-icon {
+    font-size: 40px;
+    margin: 0 auto 24px;
+    background: #fff1f2;
+    width: 80px;
+    height: 80px;
+    border-radius: 1rem;
+    @include flex-center;
+    justify-content: center;
+    color: $logout-red;
+  }
+
+  h2 {
+    margin-bottom: 12px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  p {
+    color: #6b7280;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 32px;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .btn-logout {
+    padding: 14px;
+    background-color: $logout-red;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    @include flex-center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s;
+
+    &:hover {
+      background-color: color.adjust($logout-red, $lightness: -10%);
+    }
+  }
+
+  .btn-cancel {
+    padding: 14px;
+    background-color: white;
+    color: #374151;
+    border: 1px solid $border-color;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background-color: #f9fafb;
+    }
+  }
+}
+
+.modal-footer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-family: monospace;
+}
+
+// --- Animation ---
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

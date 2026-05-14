@@ -1,0 +1,186 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100vh;
+}
+
+.login-container {
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #e5e7eb;
+
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+
+  background: #ffffff;
+  border-radius: 20px;
+
+  padding: 40px 32px;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+
+  text-align: center;
+}
+
+.login-icon {
+  width: 72px;
+  height: 72px;
+
+  margin: 0 auto 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 36px;
+  background: #eff6ff;
+
+  border: 2px solid #1d4ed8;
+  border-radius: 18px;
+
+  i {
+    font-size: 48px;
+    color: #1d4ed8;
+  }
+}
+
+.login-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.login-subtitle {
+  margin-top: 10px;
+  margin-bottom: 28px;
+
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.error-message {
+  margin-bottom: 20px;
+
+  padding: 12px 14px;
+
+  border-radius: 10px;
+
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.google-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  transition: opacity 180ms ease-out;
+}
+
+.google-button-wrapper {
+  position: relative;
+  width: 100%;
+  margin: 0 auto 24px;
+  min-height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.google-button-wrapper.loading {
+  .google-button-container {
+    opacity: 0.12;
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #1d4ed8;
+  pointer-events: none;
+  animation: loading-fade-in 180ms ease-out;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+
+  padding: 0 16px;
+
+  background: transparent;
+  border-radius: 0;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top: 3px solid #ffffff;
+
+  border-radius: 50%;
+  will-change: transform;
+
+  animation: spin 1s linear infinite;
+}
+
+@keyframes loading-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

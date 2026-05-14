@@ -1,0 +1,32 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-icon">
+      <i class="fas fa-bell"></i>
+    </div>
+
+    <h1 class="login-title">Welcome Back</h1>
+    <p class="login-subtitle">
+      KIEN NOTIFY - Your Personal Notification Hub
+    </p>
+
+    <div class="google-button-wrapper" [class.loading]="isLoading$ | async">
+      <div #googleButtonContainer class="google-button-container"></div>
+
+      @if (isLoading$ | async) {
+        <div class="loading-overlay" aria-live="polite" aria-busy="true">
+          <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Đang xác thực</p>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (errorMessage$ | async; as error) {
+      <div class="error-message">
+        {{ error }}
+      </div>
+    }
+  </div>
+
+</div>
