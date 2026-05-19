@@ -43,9 +43,21 @@
 
   <div class="campaign-card">
     <div class="campaign-table-wrapper">
-      @if (hasNoCampaigns()) {
-        <div class="empty-campaign-state">
-          <div class="empty-icon">
+      @if (loading() && campaigns().length === 0) {
+        <div class="campaign-state campaign-state-loading">
+          <div class="state-icon">
+            <i class="fas fa-spinner fa-spin"></i>
+          </div>
+
+          <h3>Đang tải chiến dịch</h3>
+
+          <p>
+            Hệ thống đang lấy danh sách chiến dịch theo bộ lọc hiện tại.
+          </p>
+        </div>
+      } @else if (hasNoCampaigns()) {
+        <div class="campaign-state campaign-state-empty">
+          <div class="state-icon">
             <i class="fas fa-folder-open"></i>
           </div>
 
@@ -69,13 +81,12 @@
               <th class="text-center">Trạng thái</th>
               <th class="text-center">Bắt đầu</th>
               <th class="text-center">Kết thúc</th>
-              <th class="text-center">Hành động</th>
             </tr>
           </thead>
 
           <tbody>
             @for (campaign of campaigns(); track trackByCampaignId($index, campaign)) {
-              <tr>
+              <tr role="button" tabindex="0" (click)="openCampaignNotifications(campaign)" (keydown.enter)="openCampaignNotifications(campaign)">
                 <td class="text-center">
                   <div class="campaign-name centered">
                     <strong>{{ campaign.name }}</strong>
@@ -83,10 +94,7 @@
                   </div>
                 </td>
                 <td class="text-center">
-                  <div
-                    class="channel-badge"
-                    [ngClass]="getChannelBadgeClass(campaign.channel)"
-                  >
+                  <div [class]="'channel-badge ' + getChannelBadgeClass(campaign.channel)">
                     <i [class]="'fas ' + channelIcon(campaign.channel)"></i>
                     <span>{{ getDisplayChannel(campaign.channel) }}</span>
                   </div>
@@ -118,12 +126,6 @@
                   <span class="date-text">
                     {{ formatDate(campaign.endTime) }}
                   </span>
-                </td>
-
-                <td class="text-center">
-                  <button type="button" class="action-button">
-                    <i class="fas fa-chevron-right"></i>
-                  </button>
                 </td>
               </tr>
             }

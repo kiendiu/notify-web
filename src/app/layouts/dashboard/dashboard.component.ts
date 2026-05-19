@@ -1,7 +1,8 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { SearchService } from '../../services/search.service';
 import { CampaignComponent } from '../campaign/campaign.component';
 
 @Component({
@@ -20,6 +21,8 @@ export class DashboardComponent implements OnInit {
     private authService: AuthService,
     private router: Router
   ) {}
+
+  private readonly searchService = inject(SearchService);
 
   ngOnInit(): void {
     if (!this.authService.isAuthenticated()) {
@@ -42,5 +45,9 @@ export class DashboardComponent implements OnInit {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  onHeaderSearch(keyword: string): void {
+    this.searchService.setSearch(keyword ?? '');
   }
 }

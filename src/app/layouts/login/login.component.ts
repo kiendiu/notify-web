@@ -13,7 +13,6 @@ declare global {
     google: any;
   }
 }
-
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -41,10 +40,7 @@ export class LoginComponent implements OnInit {
   }
 
   private initializeDeviceId(): void {
-    let deviceId = localStorage.getItem(
-      this.DEVICE_ID_STORAGE_KEY,
-    );
-
+    let deviceId = localStorage.getItem(  this.DEVICE_ID_STORAGE_KEY );
     if (!deviceId) {
       deviceId = 'WEB_DEVICE_' + Date.now();
       localStorage.setItem(
@@ -55,10 +51,7 @@ export class LoginComponent implements OnInit {
   }
 
   private getDeviceId(): string {
-    const deviceId = localStorage.getItem(
-      this.DEVICE_ID_STORAGE_KEY,
-    );
-
+    const deviceId = localStorage.getItem( this.DEVICE_ID_STORAGE_KEY );
     if (!deviceId) {
       const newDeviceId = 'WEB_DEVICE_' + Date.now();
       localStorage.setItem(
@@ -67,7 +60,6 @@ export class LoginComponent implements OnInit {
       );
       return newDeviceId;
     }
-
     return deviceId;
   }
 
@@ -119,7 +111,6 @@ export class LoginComponent implements OnInit {
       deviceName: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Browser',
       osVersion: navigator.platform
     };
-
     this.store.dispatch(AuthActions.login({ payload }));
   }
 }

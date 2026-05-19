@@ -22,10 +22,7 @@ export class AuthInterceptor implements HttpInterceptor {
     private authService: AuthService,
   ) {}
 
-  intercept(
-    request: HttpRequest<unknown>,
-    next: HttpHandler,
-  ): Observable<HttpEvent<unknown>> {
+  intercept( request: HttpRequest<unknown>, next: HttpHandler ): Observable<HttpEvent<unknown>> {
     const accessToken =
       this.tokenStorage.getAccessToken();
 
@@ -39,17 +36,13 @@ export class AuthInterceptor implements HttpInterceptor {
 
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (
-          error.status === 401 &&
-          !this.isRefreshing
-        ) {
+        if ( error.status === 401 && !this.isRefreshing ) {
           this.isRefreshing = true;
           this.refreshTokenSubject.next(null);
 
           return this.authService
             .refreshToken()
-            .pipe(
-              switchMap((response) => {
+            .pipe( switchMap((response) => {
                 this.isRefreshing = false;
                 this.refreshTokenSubject.next(
                   response.accessToken,
@@ -75,9 +68,7 @@ export class AuthInterceptor implements HttpInterceptor {
           this.isRefreshing
         ) {
           return this.refreshTokenSubject
-            .pipe(
-              filter((token) => token !== null),
-              take(1),
+            .pipe( filter((token) => token !== null), take(1),
               switchMap((token) => {
                 return next.handle(
                   this.addToken(
@@ -107,4 +98,3 @@ export class AuthInterceptor implements HttpInterceptor {
     });
   }
 }
-

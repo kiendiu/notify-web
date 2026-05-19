@@ -13,7 +13,12 @@
       <div class="header-center">
         <div class="search-wrapper">
           <i class="fas fa-search search-icon"></i>
-          <input type="text" class="search-input" placeholder="Tìm kiếm thông báo..." />
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Tìm kiếm..."
+            (input)="onHeaderSearch($any($event.target).value)"
+          />
         </div>
       </div>
 
@@ -37,13 +42,6 @@
       <button class="tab-item" [class.active]="currentTab() === 'campaigns'" (click)="selectTab('campaigns')">
         <i class="fas fa-chart-bar"></i> Chiến dịch
       </button>
-      <button class="tab-item" [class.active]="currentTab() === 'notification'" (click)="selectTab('notification')">
-        <i class="fas fa-paper-plane"></i> Thông báo
-      </button>
-    
-      <!-- <button class="tab-item" [class.active]="currentTab() === 'settings'" (click)="selectTab('settings')">
-        <i class="fas fa-cog"></i> Cài đặt
-      </button> -->
     </div>
 
     <button class="logout-btn-tab" (click)="openLogoutModal()">
@@ -63,16 +61,6 @@
           <app-campaign></app-campaign>
         </div>
       }
-      @case ('notification') {
-        <div class="tab-content">
-          <p>Danh sách thông báo</p>
-        </div>
-      }
-      <!-- @case ('settings') {
-        <div class="tab-content">
-          <p>Cài đặt hệ thống.</p>
-        </div>
-      } -->
     }
   </main>
 

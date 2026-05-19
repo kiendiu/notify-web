@@ -2,13 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConstant } from '../core/constants/api.constant';
-import {
-  CampaignCreateRequest,
-  CampaignSearchFilters,
-  CampaignSearchResponse,
-} from '../management/models/campaign.model';
+import { CampaignCreateRequest, CampaignSearchFilters, CampaignSearchResponse } from '../management/models/campaign.model';
 import { BaseApiService } from '../core/services/base_api.service';
-
 
 @Injectable({ providedIn: 'root' })
 export class CampaignService extends BaseApiService {
@@ -22,15 +17,12 @@ export class CampaignService extends BaseApiService {
       .set('page', filters.page)
       .set('size', filters.size)
       .set('sortDirection', filters.sortDirection);
-
     if (filters.status !== 'ALL') {
       params = params.set('status', filters.status);
     }
-
     if (filters.campaignName.trim()) {
       params = params.set('campaignName', filters.campaignName.trim());
     }
-
     return this.http.get<CampaignSearchResponse>(
       ApiConstant.CAMPAIGNS.SEARCH,
       { params },

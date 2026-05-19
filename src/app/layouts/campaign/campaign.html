@@ -1,6 +1,13 @@
 <div class="campaign-shell">
   @if (view() === 'list') {
-    <app-campaign-list (create)="showCreate()" />
+    <app-campaign-list
+      (create)="showCreate()"
+      (selectCampaign)="showCampaignNotifications($event)"
+    />
+  } @else if (view() === 'notifications') {
+    <ng-container
+      *ngComponentOutlet="notificationComponent; inputs: { campaign: selectedCampaign(), onBack: handleNotificationBack }"
+    ></ng-container>
   } @else {
     <!-- CREATE CAMPAIGN -->
     <section class="campaign-page">
