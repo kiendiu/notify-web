@@ -1,0 +1,189 @@
+<section class="campaign-page">
+  <div class="campaign-toolbar">
+    <button
+      type="button"
+      class="create-button"
+      (click)="create.emit()"
+    >
+      <i class="fas fa-plus-circle"></i>
+      Tạo mới chiến dịch
+    </button>
+
+    <div class="toolbar-right">
+      <div class="toolbar-field">
+        <span>TRẠNG THÁI:</span>
+
+        <select
+          class="toolbar-select"
+          [value]="filters().status"
+          (change)="updateStatus($any($event.target).value)"
+        >
+          <option value="ALL">Tất cả</option>
+          <option value="ACTIVE">Hoạt động</option>
+          <option value="COMPLETED">Đã gửi</option>
+          <option value="EXPIRED">Hết hạn</option>
+        </select>
+      </div>
+
+      <div class="toolbar-field">
+        <span>SẮP XẾP:</span>
+
+        <select
+          class="toolbar-select"
+          [value]="filters().sortDirection"
+          (change)="updateSortDirection($any($event.target).value)"
+        >
+          <option value="">Mặc định</option>
+          <option value="DESC">Mới nhất</option>
+          <option value="ASC">Cũ nhất</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="campaign-card">
+    <div class="campaign-table-wrapper">
+      @if (hasNoCampaigns()) {
+        <div class="empty-campaign-state">
+          <div class="empty-icon">
+            <i class="fas fa-folder-open"></i>
+          </div>
+
+          <h3>Chưa có chiến dịch nào</h3>
+
+          <p>
+            Hãy bắt đầu bằng cách tạo một chiến dịch mới để gửi thông báo đến người dùng của bạn.
+          </p>
+
+          <button class="reload-button" type="button" (click)="reloadList()">
+            <i class="fas fa-sync-alt"></i>
+            Tải lại trang
+          </button>
+        </div>
+      } @else {
+        <table class="campaign-table">
+          <thead>
+            <tr>
+              <th class="text-center">Tên chiến dịch</th>
+              <th class="text-center">Kênh</th>
+              <th class="text-center">Trạng thái</th>
+              <th class="text-center">Bắt đầu</th>
+              <th class="text-center">Kết thúc</th>
+              <th class="text-center">Hành động</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (campaign of campaigns(); track trackByCampaignId($index, campaign)) {
+              <tr>
+                <td class="text-center">
+                  <div class="campaign-name centered">
+                    <strong>{{ campaign.name }}</strong>
+                    <span>ID: {{ campaign.id }}</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div
+                    class="channel-badge"
+                    [ngClass]="getChannelBadgeClass(campaign.channel)"
+                  >
+                    <i [class]="'fas ' + channelIcon(campaign.channel)"></i>
+                    <span>{{ getDisplayChannel(campaign.channel) }}</span>
+                  </div>
+                </td>
+
+                <td class="text-center">
+                  <div class="status-row">
+                    <span
+                      class="status-dot"
+                      [style.backgroundColor]="getStatusDotColor(campaign.status)"
+                    ></span>
+
+                    <span
+                      class="status-text"
+                      [style.color]="getStatusTextStyleColor(campaign.status)"
+                    >
+                      {{ getDisplayStatus(campaign.status) }}
+                    </span>
+                  </div>
+                </td>
+
+                <td class="text-center">
+                  <span class="date-text">
+                    {{ formatDate(campaign.scheduledTime) }}
+                  </span>
+                </td>
+
+                <td class="text-center">
+                  <span class="date-text">
+                    {{ formatDate(campaign.endTime) }}
+                  </span>
+                </td>
+
+                <td class="text-center">
+                  <button type="button" class="action-button">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    @if (!hasNoCampaigns()) {
+      <div class="pagination">
+        <div class="pagination-left">
+          <span>
+            Hiển thị {{ page().items.length }} trong số {{ page().totalElements }} chiến dịch
+          </span>
+
+          <div class="page-size">
+            <span>Số hàng mỗi trang:</span>
+
+            <select
+              class="page-size-select"
+              [value]="page().size"
+              (change)="updateRowsPerPage($any($event.target).value)"
+            >
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pagination-right">
+          <button
+            class="pagination-button"
+            [disabled]="page().first"
+            (click)="goToPage(page().number - 1)"
+          >
+            <i class="fas fa-chevron-left"></i> Trước
+          </button>
+
+          <div class="pagination-pages">
+            @for (pageNumber of pageNumbers(); track pageNumber) {
+              <button
+                class="page-button"
+                [class.active]="pageNumber === page().number"
+                (click)="goToPage(pageNumber)"
+              >
+                {{ pageNumber + 1 }}
+              </button>
+            }
+          </div>
+
+          <button
+            class="pagination-button"
+            [disabled]="page().last"
+            (click)="goToPage(page().number + 1)"
+          >
+            Tiếp <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</section>

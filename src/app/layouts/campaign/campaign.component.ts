@@ -1,22 +1,22 @@
-import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { toSignal } from '@angular/core/rxjs-interop';
 import * as CampaignActions from '../../management/stores/campaign/campaign.actions';
 import * as PreviewActions from '../../management/stores/preview/preview.actions';
-import { selectCampaignState } from '../../management/stores/campaign/campaign.selectors';
 import { 
   selectPushPreview, 
   selectEmailPreview, 
   selectTemplates,
   selectUsers,
-  selectTemplatesLoading,
 } from '../../management/stores/preview/preview.selectors';
-import { CampaignChannel, CampaignCreateRequest, CampaignSortDirection, CampaignStatusFilter, CampaignSummary, CampaignTargetType, defaultCampaignFilters, defaultCampaignPage } from '../../management/models/campaign.model';
+import { CampaignListComponent } from './campaign-list/campaign-list.component';
+import { CampaignPreviewComponent } from './campaign-preview/campaign-preview.component';
+import { CampaignChannel, CampaignCreateRequest, CampaignTargetType } from '../../management/models/campaign.model';
 
 @Component({
 	selector: 'app-campaign',
-	imports: [CommonModule],
+	imports: [CommonModule, CampaignListComponent, CampaignPreviewComponent],
 	templateUrl: './campaign.html',
 	styleUrl: './campaign.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,7 +26,6 @@ export class CampaignComponent implements OnInit {
 
 	readonly view = signal<'list' | 'create'>('list');
 	readonly selectedChannels = signal<CampaignChannel[]>(['PUSH']);
-	readonly searchDraft = signal(defaultCampaignFilters.campaignName);
 	readonly recipientSearchDraft = signal('');
 	readonly isSubmitting = signal(false);
 	readonly submitError = signal('');
@@ -67,34 +66,13 @@ export class CampaignComponent implements OnInit {
 		});
 	});
 
-	// Campaign state
-	readonly campaignState = toSignal(
-		this.store.select(selectCampaignState),
-		{
-			initialValue: {
-				filters: defaultCampaignFilters,
-				page: defaultCampaignPage,
-				loading: false,
-				errorMessage: null,
-			},
-		},
-	);
-
 	// Preview state
 	readonly pushPreview = toSignal(this.store.select(selectPushPreview), { initialValue: null });
 	readonly emailPreview = toSignal(this.store.select(selectEmailPreview), { initialValue: null });
 	readonly templates = toSignal(this.store.select(selectTemplates), { initialValue: [] });
 	readonly users = toSignal(this.store.select(selectUsers), { initialValue: [] });
-	readonly templatesLoading = toSignal(this.store.select(selectTemplatesLoading), { initialValue: false });
 
 	// Computed
-	readonly filters = computed(() => this.campaignState().filters);
-	readonly campaigns = computed(() => this.campaignState().page.items);
-	readonly page = computed(() => this.campaignState().page);
-	readonly loading = computed(() => this.campaignState().loading);
-	readonly errorMessage = computed(() => this.campaignState().errorMessage);
-	readonly pageNumbers = computed(() => this.buildPageNumbers(this.page().totalPages, this.page().number));
-	readonly previewChannel = computed(() => this.selectedChannels()[0] ?? 'PUSH');
 	readonly selectedChannelsLabel = computed(() => this.getDisplayChannel(this.selectedChannels().join(',')));
 	readonly isSpecificTarget = computed(() => this.targetType() === 'SPECIFIC');
 	readonly selectedRecipientNamesLabel = computed(() => {
@@ -132,13 +110,8 @@ export class CampaignComponent implements OnInit {
 
 		return true;
 	});
-	readonly hasNoCampaigns = computed(() => 
-		!this.loading() && this.campaigns().length === 0
-	);
 
 	ngOnInit(): void {
-		this.searchDraft.set(this.filters().campaignName);
-		this.store.dispatch(CampaignActions.loadCampaigns());
 		this.store.dispatch(PreviewActions.loadTemplates());
 	}
 
@@ -149,59 +122,10 @@ export class CampaignComponent implements OnInit {
 		this.submitError.set('');
 	}
 
-	reloadList(): void {
-		this.store.dispatch(CampaignActions.setCampaignPage({ page: 0 }));
-		this.store.dispatch(CampaignActions.loadCampaigns());
-	}
-
 	showCreate(): void {
 		this.view.set('create');
 		this.store.dispatch(PreviewActions.loadTemplates());
 		this.submitError.set('');
-	}
-
-	updateSearchDraft(value: string): void {
-		this.searchDraft.set(value);
-	}
-
-	applySearch(): void {
-		this.store.dispatch(CampaignActions.setCampaignName({ campaignName: this.searchDraft().trim() }));
-		this.store.dispatch(CampaignActions.setCampaignPage({ page: 0 }));
-		this.store.dispatch(CampaignActions.loadCampaigns());
-	}
-
-	clearSearch(): void {
-		this.searchDraft.set('');
-		this.store.dispatch(CampaignActions.setCampaignName({ campaignName: '' }));
-		this.store.dispatch(CampaignActions.setCampaignPage({ page: 0 }));
-		this.store.dispatch(CampaignActions.loadCampaigns());
-	}
-
-	updateStatus(status: string): void {
-		this.store.dispatch(CampaignActions.setCampaignStatus({ status: this.normalizeStatus(status) }));
-		this.store.dispatch(CampaignActions.loadCampaigns());
-	}
-
-	updateSortDirection(sortDirection: string): void {
-		this.store.dispatch(CampaignActions.setCampaignSortDirection({ sortDirection: this.normalizeSortDirection(sortDirection) }));
-		this.store.dispatch(CampaignActions.loadCampaigns());
-	}
-
-	updateRowsPerPage(size: string): void {
-		const nextSize = Number(size) || 10;
-		this.store.dispatch(CampaignActions.setCampaignSize({ size: nextSize }));
-		this.store.dispatch(CampaignActions.loadCampaigns());
-	}
-
-	goToPage(page: number): void {
-		const currentPage = this.page();
-
-		if (page < 0 || page >= currentPage.totalPages || page === currentPage.number) {
-			return;
-		}
-
-		this.store.dispatch(CampaignActions.setCampaignPage({ page }));
-		this.store.dispatch(CampaignActions.loadCampaigns());
 	}
 
 	toggleChannel(channel: CampaignChannel): void {
@@ -406,68 +330,12 @@ export class CampaignComponent implements OnInit {
 		}
 	}
 
-	trackByCampaignId(_: number, campaign: { id: string }): string {
-		return campaign.id;
-	}
-
 	trackByTemplateId(_: number, template: { templateName: string }): string {
 		return template.templateName;
 	}
 
 	trackByUserId(_: number, user: { id: number }): number {
 		return user.id;
-	}
-
-	formatDate(value: string | null | undefined): string {
-		if (!value) {
-			return '-';
-		}
-
-		return new Intl.DateTimeFormat('vi-VN', {
-			day: '2-digit',
-			month: '2-digit',
-			year: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-		}).format(new Date(value));
-	}
-
-	channelIcon(channel: string): string {
-		const channels = this.getChannelValues(channel);
-
-		if (channels.length > 1) {
-			return 'fa-layer-group';
-		}
-
-		if (channels.length === 0) {
-			return 'fa-bullhorn';
-		}
-
-		switch (channels[0]) {
-			case 'PUSH':
-				return 'fa-mobile-alt';
-			case 'EMAIL':
-				return 'fa-envelope';
-			case 'SMS':
-				return 'fa-comment-dots';
-			default:
-				return 'fa-bullhorn';
-		}
-	}
-
-	getDisplayStatus(status: string): string {
-		const normalized = status.toUpperCase();
-		switch (normalized) {
-			case 'SENT':
-			case 'ACTIVE':
-				return 'Đang hoạt động';
-			case 'COMPLETED':
-				return 'Đã hoàn thành';
-			case 'EXPIRED':
-				return 'Đã kết thúc';
-			default:
-				return status;
-		}
 	}
 
 	getDisplayChannel(channel: string): string {
@@ -493,118 +361,6 @@ export class CampaignComponent implements OnInit {
 			.join(', ');
 	}
 
-	getChannelBadgeClass(channel: string): string {
-		const channels = this.getChannelValues(channel);
-
-		if (channels.length > 1) {
-			return 'default';
-		}
-
-		if (channels.length === 0) {
-			return 'default';
-		}
-
-		return channels[0].toLowerCase();
-	}
-
-	getSentProgress(campaign: CampaignSummary): number {
-		if (!campaign.totalTarget || campaign.totalTarget <= 0) {
-			return 0;
-		}
-
-		return Math.min(100, Math.round((campaign.sentStatus.sent / campaign.totalTarget) * 100));
-	}
-
-	getStatusDotColor(status: string): string {
-		const normalized = status.toUpperCase();
-		switch (normalized) {
-			case 'SENT':
-			case 'ACTIVE':
-			case 'COMPLETED':
-				return '#10b981';
-			case 'FAILED':
-			case 'EXPIRED':
-				return '#ef4444';
-			case 'PENDING':
-			case 'DRAFT':
-				return '#f59e0b';
-			default:
-				return '#cbd5e1';
-		}
-	}
-
-	getStatusTextStyleColor(status: string): string {
-		const normalized = status.toUpperCase();
-		switch (normalized) {
-			case 'SENT':
-			case 'ACTIVE':
-			case 'COMPLETED':
-				return '#047857';
-			case 'FAILED':
-			case 'EXPIRED':
-				return '#dc2626';
-			case 'PENDING':
-			case 'DRAFT':
-				return '#b45309';
-			default:
-				return '#475569';
-		}
-	}
-
-	getStatusColor(status: string): string {
-		const normalized = status.toUpperCase();
-		// Map backend status to UI status
-		switch (normalized) {
-			case 'SENT':
-			case 'ACTIVE':
-			case 'COMPLETED':
-				return 'bg-emerald-500';
-			case 'FAILED':
-			case 'EXPIRED':
-				return 'bg-rose-500';
-			case 'PENDING':
-			case 'DRAFT':
-				return 'bg-amber-500';
-			default:
-				return 'bg-slate-400';
-		}
-	}
-
-	getStatusTextColor(status: string): string {
-		const normalized = status.toUpperCase();
-		switch (normalized) {
-			case 'SENT':
-			case 'ACTIVE':
-			case 'COMPLETED':
-				return 'text-emerald-700';
-			case 'FAILED':
-			case 'EXPIRED':
-				return 'text-rose-700';
-			case 'PENDING':
-			case 'DRAFT':
-				return 'text-amber-700';
-			default:
-				return 'text-slate-600';
-		}
-	}
-
-	private normalizeStatus(status: string): CampaignStatusFilter {
-		const normalized = status.toUpperCase();
-
-		if (normalized === 'ACTIVE' || normalized === 'COMPLETED' || normalized === 'EXPIRED') {
-			return normalized;
-		}
-
-		return 'ALL';
-	}
-
-	private normalizeSortDirection(sortDirection: string): CampaignSortDirection {
-		if (sortDirection === '' || sortDirection.toLowerCase() === 'default') {
-			return '';
-		}
-		return sortDirection.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-	}
-
 	private getChannelValues(channel: string): string[] {
 		if (!channel) {
 			return [];
@@ -614,22 +370,6 @@ export class CampaignComponent implements OnInit {
 			.split(',')
 			.map((item) => item.trim().toUpperCase())
 			.filter((item) => item.length > 0);
-	}
-
-	private buildPageNumbers(totalPages: number, currentPage: number): number[] {
-		if (totalPages <= 1) {
-			return totalPages === 1 ? [0] : [];
-		}
-
-		const start = Math.max(0, currentPage - 1);
-		const end = Math.min(totalPages - 1, start + 2);
-		const pages: number[] = [];
-
-		for (let page = start; page <= end; page += 1) {
-			pages.push(page);
-		}
-
-		return pages;
 	}
 
 	private resetFormState(): void {
