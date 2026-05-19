@@ -1,0 +1,569 @@
+<div class="campaign-shell">
+  @if (view() === 'list') {
+    <section class="campaign-page">
+
+      <!-- Toolbar -->
+      <div class="campaign-toolbar">
+        <button
+          type="button"
+          class="create-button"
+          (click)="showCreate()"
+        >
+          <i class="fas fa-plus-circle"></i>
+          Tạo mới
+        </button>
+
+        <div class="toolbar-right">
+          <div class="toolbar-field">
+            <span>TRẠNG THÁI:</span>
+
+            <select
+              class="toolbar-select"
+              [value]="filters().status"
+              (change)="updateStatus($any($event.target).value)"
+            >
+              <option value="ALL">Tất cả</option>
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="COMPLETED">Đã gửi</option>
+              <option value="EXPIRED">Hết hạn</option>
+            </select>
+          </div>
+
+          <div class="toolbar-field">
+            <span>SẮP XẾP:</span>
+
+            <select
+              class="toolbar-select"
+              [value]="filters().sortDirection"
+              (change)="updateSortDirection($any($event.target).value)"
+            >
+              <option value="">Mặc định</option>
+              <option value="DESC">Mới nhất</option>
+              <option value="ASC">Cũ nhất</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="campaign-card">
+        <div class="campaign-table-wrapper">
+          @if (hasNoCampaigns()) {
+            <div class="empty-campaign-state">
+              <div class="empty-icon">
+                <i class="fas fa-folder-open"></i>
+              </div>
+
+              <h3>Chưa có chiến dịch nào</h3>
+
+              <p>
+                Hãy bắt đầu bằng cách tạo một chiến dịch mới để gửi thông báo đến người dùng của bạn.
+              </p>
+
+              <button class="reload-button" type="button" (click)="reloadList()">
+                <i class="fas fa-sync-alt"></i>
+                Tải lại trang
+              </button>
+            </div>
+          } @else {
+            <table class="campaign-table">
+              <thead>
+                <tr>
+                  <th class="text-center">Tên chiến dịch</th>
+                  <th class="text-center">Kênh</th>
+                  <th class="text-center">Trạng thái</th>
+                  <th class="text-center">Bắt đầu</th>
+                  <th class="text-center">Kết thúc</th>
+                  <th class="text-center">Hành động</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                @for (campaign of campaigns(); track trackByCampaignId($index, campaign)) {
+                  <tr>
+                    <td class="text-center">
+                      <div class="campaign-name centered">
+                        <strong>{{ campaign.name }}</strong>
+                        <span>ID: {{ campaign.id }}</span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <div
+                        class="channel-badge"
+                        [ngClass]="getChannelBadgeClass(campaign.channel)"
+                      >
+                        <i [class]="'fas ' + channelIcon(campaign.channel)"></i>
+                        <span>{{ getDisplayChannel(campaign.channel) }}</span>
+                      </div>
+                    </td>
+
+                    <td class="text-center">
+                      <div class="status-row">
+                        <span
+                          class="status-dot"
+                          [style.backgroundColor]="getStatusDotColor(campaign.status)"
+                        ></span>
+
+                        <span
+                          class="status-text"
+                          [style.color]="getStatusTextStyleColor(campaign.status)"
+                        >
+                          {{ getDisplayStatus(campaign.status) }}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td class="text-center">
+                      <span class="date-text">
+                        {{ formatDate(campaign.scheduledTime) }}
+                      </span>
+                    </td>
+
+                    <td class="text-center">
+                      <span class="date-text">
+                        {{ formatDate(campaign.endTime) }}
+                      </span>
+                    </td>
+
+                    <td class="text-center">
+                      <button type="button" class="action-button">
+                        <i class="fas fa-chevron-right"></i>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+
+        <!-- Pagination -->
+        @if (!hasNoCampaigns()) {
+          <div class="pagination">
+            <div class="pagination-left">
+              <span>
+                Hiển thị {{ page().items.length }} trong số {{ page().totalElements }} chiến dịch
+              </span>
+
+              <div class="page-size">
+                <span>Số hàng mỗi trang:</span>
+
+                <select
+                  class="page-size-select"
+                  [value]="page().size"
+                  (change)="updateRowsPerPage($any($event.target).value)"
+                >
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="pagination-right">
+              <button
+                class="pagination-button"
+                [disabled]="page().first"
+                (click)="goToPage(page().number - 1)"
+              >
+                <i class="fas fa-chevron-left"></i> Trước
+              </button>
+
+              <div class="pagination-pages">
+                @for (pageNumber of pageNumbers(); track pageNumber) {
+                  <button
+                    class="page-button"
+                    [class.active]="pageNumber === page().number"
+                    (click)="goToPage(pageNumber)"
+                  >
+                    {{ pageNumber + 1 }}
+                  </button>
+                }
+              </div>
+
+              <button
+                class="pagination-button"
+                [disabled]="page().last"
+                (click)="goToPage(page().number + 1)"
+              >
+                Tiếp <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  } @else {
+    <!-- CREATE CAMPAIGN -->
+    <section class="campaign-page">
+      <!-- Header -->
+      <div class="page-header">
+        <button class="back-btn" (click)="showList()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+
+        <div class="header-content">
+          <h1>Tạo chiến dịch mới</h1>
+          <p>Thiết lập thông tin và cấu hình gửi thông báo cho khách hàng.</p>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="campaign-body">
+        <!-- LEFT -->
+        <div class="campaign-form-card">
+          <!-- Campaign Name -->
+          <div class="form-group full-width">
+            <label>TÊN ĐỊNH DANH CHIẾN DỊCH</label>
+
+            <input
+              type="text"
+              placeholder="Ví dụ: Flash Sale Tháng 10 - All Users"
+              [value]="campaignName()"
+              (change)="campaignName.set($any($event.target).value)"
+            />
+          </div>
+
+          <!-- Row -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>ĐỐI TƯỢNG</label>
+
+              <select
+                [value]="targetType()"
+                (change)="onTargetTypeChange($any($event.target).value)"
+              >
+                <option value="ALL">Tất cả</option>
+                <option value="ACTIVE">Hoạt động</option>
+                <option value="INACTIVE">Ngưng hoạt động</option>
+                <option value="SPECIFIC">Theo danh sách</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>TỐC ĐỘ GỬI (LƯỢT/GIỜ)</label>
+
+              <input 
+                type="number" 
+                [value]="ratePerHour()"
+                (change)="ratePerHour.set($any($event.target).value)"
+              />
+            </div>
+          </div>
+
+          @if (isSpecificTarget()) {
+            <div class="form-group full-width">
+              <label>NGƯỜI NHẬN</label>
+
+              <div class="user-picker-wrapper">
+                <button type="button" class="user-picker-button" (click)="openUserModal()">
+                  @if (selectedUserIds().length > 0) {
+                    <span>{{ selectedRecipientNamesLabel() }}</span>
+                  } @else {
+                    <span>-- Chọn người nhận --</span>
+                  }
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              </div>
+
+              <!-- User Modal -->
+              @if (showUserModal()) {
+                <div class="user-modal">
+                  <div class="modal-backdrop" (click)="closeUserModal()"></div>
+                  <div class="modal-dialog">
+                    <div class="modal-header">
+                      <input type="text" placeholder="Tìm theo tên hoặc email..." (input)="userSearch.set($any($event.target).value)" />
+                      <div class="modal-header-buttons">
+                        @if (selectedUserIds().length > 0) {
+                          <button type="button" class="btn-clear-users" (click)="clearUserSelection()">Bỏ chọn tất cả</button>
+                        }
+                        <button type="button" class="btn-close" (click)="closeUserModal()">Đóng</button>
+                      </div>
+                    </div>
+                    <div class="user-list">
+                      @for (user of filteredUsers(); track trackByUserId($index, user)) {
+                        <div class="user-item" [class.selected]="isUserSelected(user.id)">
+                          <label class="user-checkbox-label">
+                            <input type="checkbox" [checked]="isUserSelected(user.id)" (change)="toggleUserSelection(user.id)" />
+                            <span>{{ user.name }}</span>
+                          </label>
+                          <span class="user-email">{{ user.email }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <div class="recipient-helper">
+                Chọn tối thiểu 1 người. Đã chọn: {{ selectedRecipientNamesLabel() }}
+              </div>
+            </div>
+          }
+
+          <!-- Channel -->
+          <div class="form-group full-width">
+            <label>KÊNH GỬI</label>
+
+            <div class="channel-helper">
+              Đã chọn: {{ selectedChannelsLabel() }}
+            </div>
+
+            <div class="channel-send-list">
+              <button
+                type="button"
+                class="channel-item"
+                [class.active]="selectedChannels().includes('PUSH')"
+                (click)="toggleChannel('PUSH')"
+              >
+                <i class="fas fa-mobile-alt"></i>
+                <span>PUSH</span>
+              </button>
+
+              <button
+                type="button"
+                class="channel-item"
+                [class.active]="selectedChannels().includes('EMAIL')"
+                (click)="toggleChannel('EMAIL')"
+              >
+                <i class="far fa-envelope"></i>
+                <span>EMAIL</span>
+              </button>
+
+              <button
+                type="button"
+                class="channel-item"
+                [class.active]="selectedChannels().includes('SMS')"
+                (click)="toggleChannel('SMS')"
+              >
+                <i class="far fa-comment-alt"></i>
+                <span>SMS</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Template -->
+          <div class="form-group full-width">
+            <label>CHỌN TEMPLATE</label>
+
+            <div
+              class="template-picker"
+              (click)="openTemplateModal()"
+            >
+              <span>
+                @if (selectedTemplate()) {
+                  {{ selectedTemplate() }}
+                } @else {
+                  -- Chọn template --
+                }
+              </span>
+
+              <i class="fas fa-chevron-down"></i>
+            </div>
+          </div>
+          <!-- Template Modal -->
+          @if (showTemplateModal()) {
+            <div class="template-modal">
+              <div class="modal-backdrop" (click)="closeTemplateModal()"></div>
+              <div class="modal-dialog">
+                <div class="modal-header">
+                  <input type="text" placeholder="Tìm kiếm template..." (input)="templateSearch.set($any($event.target).value)" />
+                  <div class="modal-header-buttons">
+                    @if (selectedTemplate()) {
+                      <button type="button" class="btn-clear-template" (click)="clearTemplate()">Bỏ chọn</button>
+                    }
+                    <button type="button" class="btn-close" (click)="closeTemplateModal()">Đóng</button>
+                  </div>
+                </div>
+                <div class="template-list">
+                  @for (template of filteredTemplates(); track trackByTemplateId($index, template)) {
+                    <div class="template-card" [class.selected]="template.templateName === selectedTemplate()">
+                      <div class="template-card-body">
+                        <div class="template-name">{{ template.templateName }}</div>
+                        <div class="template-subject">{{ template.subject }}</div>
+                        <div class="template-content">{{ template.content }}</div>
+                      </div>
+                      <div class="template-card-action">
+                        @if (template.templateName === selectedTemplate()) {
+                          <span class="badge-selected">✓ Đã chọn</span>
+                        } @else {
+                          <button type="button" class="btn-choose" (click)="selectTemplateFromModal(template.templateName)">Chọn</button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Title -->
+          <div class="form-group full-width">
+            <label>TIÊU ĐỀ (PUSHTITLE)</label>
+
+            <input
+              type="text"
+              placeholder="Tiêu đề hiển thị..."
+              [value]="pushTitle()"
+              [disabled]="!!selectedTemplate()"
+              (input)="onPushTitleChange($any($event.target).value)"
+            />
+          </div>
+
+          <!-- Content -->
+          <div class="form-group full-width">
+            <label>NỘI DUNG (PUSHBODY)</label>
+
+            <textarea
+              rows="5"
+              placeholder="Nội dung thông báo..."
+              [value]="pushBody()"
+              [disabled]="!!selectedTemplate()"
+              (input)="onPushBodyChange($any($event.target).value)"
+            ></textarea>
+          </div>
+
+          <!-- Link -->
+          <div class="form-group full-width">
+            <label>LINK (PUSHACTIONURL)</label>
+
+            <input
+              type="text"
+              placeholder="https://app.example.com/promo"
+              [value]="pushActionUrl()"
+              (change)="pushActionUrl.set($any($event.target).value)"
+            />
+          </div>
+
+          <!-- Time -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>THỜI GIAN BẮT ĐẦU</label>
+
+              <div class="date-input">
+                <input 
+                  type="datetime-local"
+                  [value]="scheduledTime()"
+                  (change)="scheduledTime.set($any($event.target).value)"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>THỜI GIAN KẾT THÚC</label>
+
+              <div class="date-input">
+                <input 
+                  type="datetime-local"
+                  [value]="endTime()"
+                  (change)="endTime.set($any($event.target).value)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="form-footer">
+            <button
+              class="btn-cancel"
+              type="button"
+              (click)="showList()"
+            >
+              Hủy
+            </button>
+
+            <button
+              class="btn-submit"
+              type="button"
+              [disabled]="isSubmitting() || !canSubmit()"
+              (click)="createCampaign()"
+            >
+              @if (isSubmitting()) {
+                Đang tạo...
+              } @else {
+                Tạo chiến dịch
+              }
+            </button>
+          </div>
+
+          @if (submitError()) {
+            <div class="form-error">{{ submitError() }}</div>
+          }
+        </div>
+
+        <!-- RIGHT -->
+        <div class="preview-section">
+          <!-- Push Preview -->
+          @if (selectedChannels().includes('PUSH')) {
+            <div class="preview-card">
+              <div class="preview-header">
+                <h3>Preview: Mobile Push</h3>
+                <span>iOS / Android</span>
+              </div>
+
+              <div class="mobile-preview">
+                <div class="phone-frame">
+                  <div class="phone-notch"></div>
+
+                  <div class="push-card">
+                    <div class="push-top">
+                      <div class="app-info">
+                        <div class="app-icon">
+                          <i class="fas fa-bell"></i>
+                        </div>
+                        <span>ADMIN NOTIFY</span>
+                      </div>
+                      <small>Bây giờ</small>
+                    </div>
+
+                    @if (pushPreview()) {
+                      <h4>{{ pushPreview()?.title || 'Tiêu đề sẽ hiển thị ở đây...' }}</h4>
+                      <p>{{ pushPreview()?.body || 'Nội dung sẽ hiển thị ở đây...' }}</p>
+                    } @else {
+                      <h4>Tiêu đề sẽ hiển thị ở đây...</h4>
+                      <p>Nội dung sẽ hiển thị ở đây...</p>
+                    }
+                  </div>
+
+                  <div class="home-bar"></div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Email Preview -->
+          @if (selectedChannels().includes('EMAIL')) {
+            <div class="preview-card">
+              <div class="preview-header">
+                <h3>Preview: Email Layout</h3>
+                <span>DESKTOP</span>
+              </div>
+
+              <div class="email-preview">
+                <div class="email-container">
+                  <div class="email-header">
+                    BRAND LOGO
+                  </div>
+
+                  <div class="email-body">
+                    <h4>Chào bạn,</h4>
+
+                    @if (emailPreview()) {
+                      <p>{{ emailPreview()?.subject }}</p>
+                      <p>{{ emailPreview()?.content }}</p>
+                    } @else {
+                      <p>Chúng tôi gửi đến bạn thông tin về ưu đãi đặc biệt.</p>
+                      <p>Nội dung email sẽ hiển thị ở đây...</p>
+                    }
+
+                    <button>Khám Phá Ngay</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+</div>

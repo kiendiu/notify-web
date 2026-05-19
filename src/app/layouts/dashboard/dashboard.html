@@ -34,15 +34,16 @@
       <button class="tab-item" [class.active]="currentTab() === 'dashboard'" (click)="selectTab('dashboard')">
         <i class="fas fa-th-large"></i> Trang chủ
       </button>
-      <button class="tab-item" [class.active]="currentTab() === 'notification'" (click)="selectTab('notification')">
-        <i class="fas fa-paper-plane"></i> Thông báo
-      </button>
       <button class="tab-item" [class.active]="currentTab() === 'campaigns'" (click)="selectTab('campaigns')">
         <i class="fas fa-chart-bar"></i> Chiến dịch
       </button>
-      <button class="tab-item" [class.active]="currentTab() === 'settings'" (click)="selectTab('settings')">
-        <i class="fas fa-cog"></i> Cài đặt
+      <button class="tab-item" [class.active]="currentTab() === 'notification'" (click)="selectTab('notification')">
+        <i class="fas fa-paper-plane"></i> Thông báo
       </button>
+    
+      <!-- <button class="tab-item" [class.active]="currentTab() === 'settings'" (click)="selectTab('settings')">
+        <i class="fas fa-cog"></i> Cài đặt
+      </button> -->
     </div>
 
     <button class="logout-btn-tab" (click)="openLogoutModal()">
@@ -59,7 +60,7 @@
       }
       @case ('campaigns') {
         <div class="tab-content">
-          <p>Danh sách chiến dịch</p>
+          <app-campaign></app-campaign>
         </div>
       }
       @case ('notification') {
@@ -67,11 +68,11 @@
           <p>Danh sách thông báo</p>
         </div>
       }
-      @case ('settings') {
+      <!-- @case ('settings') {
         <div class="tab-content">
           <p>Cài đặt hệ thống.</p>
         </div>
-      }
+      } -->
     }
   </main>
 

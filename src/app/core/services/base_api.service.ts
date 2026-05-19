@@ -4,6 +4,14 @@ import { inject } from '@angular/core';
 export abstract class BaseApiService {
   protected http = inject(HttpClient);
 
+  protected request<T>(
+    method: string,
+    url: string,
+    options?: any,
+  ) {
+    return this.http.request<T>(method, url, options);
+  }
+
   protected get<T>(url: string) {
     return this.http.get<T>(url);
   }

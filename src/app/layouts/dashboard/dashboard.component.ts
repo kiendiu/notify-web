@@ -2,11 +2,12 @@ import { Component, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { CampaignComponent } from '../campaign/campaign.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CampaignComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
