@@ -19,8 +19,7 @@
           <select
             class="toolbar-select"
             [value]="notificationFilters().status"
-            (change)="updateNotificationStatus($any($event.target).value)"
-          >
+            (change)="updateNotificationStatus($any($event.target).value)">
             <option value="">Tất cả</option>
             <option value="sent">Đã gửi</option>
             <option value="pending">Đang chờ</option>
@@ -82,6 +81,7 @@
                 <th class="text-center">Tiêu đề</th>
                 <th class="text-center">Gửi lúc</th>
                 <th class="text-center">Thiết bị</th>
+                <th class="text-center">Gửi lại</th>
               </tr>
             </thead>
 
@@ -109,7 +109,6 @@
                       <span>{{ getDisplayChannel(notification.channel) }}</span>
                     </div>
                   </td>
-
                   <td class="text-center">
                     <div class="status-row">
                       <span class="status-dot" [style.backgroundColor]="getStatusDotColor(notification.status)"></span>
@@ -136,6 +135,20 @@
                       <span>{{ getNotificationDeviceCount(notification) }}</span>
                       <small>thiết bị</small>
                     </div>
+                  </td>
+
+                  <td class="text-center">
+                    <button
+                      type="button"
+                      class="btn-retry"
+                      [disabled]="notification.status !== 'failed'"
+                      [class.disabled]="notification.status !== 'failed'"
+                        (click)="retryNotificationFromTable(notification); $event.stopPropagation()"
+                        [title]="notification.status === 'failed' ? 'Gửi lại thông báo' : 'Chỉ có thể gửi lại thông báo thất bại'"
+                    >
+                      <i class="fas fa-redo-alt"></i>
+                      <span>Gửi lại</span>
+                    </button>
                   </td>
                 </tr>
               }
@@ -195,79 +208,16 @@
     </div>
   }
 
-  @if (showNotificationDetailsModal()) {
-    <div class="modal-shell">
-      <div class="modal-backdrop" (click)="closeNotificationDetailsModal()"></div>
-
-      <div class="modal-dialog details-modal">
-        <div class="modal-header">
-          <div>
-            <p class="section-label">CHI TIẾT THIẾT BỊ</p>
-            <h3>{{ selectedNotification()?.title || 'Thông báo' }}</h3>
-            <p class="section-subtitle">
-              {{ selectedNotification()?.userName }} · {{ getDisplayChannel(selectedNotification()?.channel || '') }}
-            </p>
-          </div>
-
-          <button type="button" class="btn-close" (click)="closeNotificationDetailsModal()">Đóng</button>
-        </div>
-
-        @if (notificationDetailsLoading()) {
-          <div class="modal-loading">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span>Đang tải chi tiết thiết bị...</span>
-          </div>
-        } @else if (notificationDetailsErrorMessage()) {
-          <div class="notification-alert error modal-alert">
-            <i class="fas fa-exclamation-circle"></i>
-            <span>{{ notificationDetailsErrorMessage() }}</span>
-          </div>
-        } @else if (notificationDetails().length === 0) {
-          <div class="notification-empty-state modal-empty">
-            <div class="empty-icon">
-              <i class="fas fa-mobile-screen-button"></i>
-            </div>
-
-            <h3>Không có dữ liệu thiết bị</h3>
-            <p>Thông báo này chưa trả về danh sách thiết bị liên quan.</p>
-          </div>
-        } @else {
-          <div class="device-table-wrapper">
-            <table class="device-table">
-              <thead>
-                <tr>
-                  <th class="text-center">Target</th>
-                  <th class="text-center">Thiết bị</th>
-                  <th class="text-center">Trạng thái</th>
-                  <th class="text-center">Retry</th>
-                  <th class="text-center">Cập nhật</th>
-                  <th class="text-center">Lỗi</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                @for (detail of notificationDetails(); track trackByDeviceDetailId($index, detail)) {
-                  <tr>
-                    <td class="text-center mono-text">{{ getNotificationDestination(detail) }}</td>
-                    <td class="text-center">{{ detail.deviceName || '-' }}</td>
-                    <td class="text-center">
-                      <div class="status-row">
-                        <span class="status-dot" [style.backgroundColor]="getStatusDotColor(detail.status)"></span>
-                        <span class="status-text" [style.color]="getStatusTextStyleColor(detail.status)">
-                          {{ getNotificationStatusText(detail.status) }}
-                        </span>
-                      </div>
-                    </td>
-                    <td class="text-center">{{ getNotificationRetryText(detail) }}</td>
-                    <td class="text-center">{{ formatDate(detail.updatedAt) }}</td>
-                    <td class="text-center error-text">{{ detail.errorMessage || '-' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </div>
-    </div>
+  @if (showNotificationDetailsPanel()) {
+    <app-notification-detail
+      [selectedNotification]="selectedNotification()"
+      [notificationDetails]="notificationDetails()"
+      [notificationDetailsLoading]="notificationDetailsLoading()"
+      [notificationDetailsErrorMessage]="notificationDetailsErrorMessage()"
+      [retryLoading]="retryLoading()"
+      [retryError]="retryError()"
+      (close)="closeNotificationDetailsPanel()"
+      (retry)="retryNotification()"
+    />
   }
 </div>

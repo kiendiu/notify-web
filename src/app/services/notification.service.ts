@@ -39,4 +39,11 @@ export class NotificationService {
 			ApiConstant.CAMPAIGNS.NOTIFICATION_DETAILS(notificationId),
 		);
 	}
+
+	retryNotification(notificationId: string | number): Observable<void> {
+		return this.http.post<void>(
+			ApiConstant.CAMPAIGNS.NOTIFICATION_RETRY(notificationId),
+			{},
+		);
+	}
 }

@@ -22,11 +22,12 @@ import {
   normalizeNotificationDetails,
   normalizeNotificationPage,
 } from '../../../management/models/notification.model';
+import { NotificationDetailComponent } from './notification-detail.component';
 
 @Component({
   selector: 'app-campaign-notification',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NotificationDetailComponent],
   templateUrl: './campaign-notification.html',
   styleUrl: './campaign-notification.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,7 +55,9 @@ export class CampaignNotificationComponent {
   readonly notificationDetails = signal<NotificationDeviceDetail[]>([]);
   readonly notificationDetailsLoading = signal(false);
   readonly notificationDetailsErrorMessage = signal<string | null>(null);
-  readonly showNotificationDetailsModal = signal(false);
+  readonly showNotificationDetailsPanel = signal(false);
+  readonly retryLoading = signal(false);
+  readonly retryError = signal<string | null>(null);
 
   //computed state
   readonly notificationCount = computed(() => this.notificationPage().totalElements);
@@ -67,34 +70,34 @@ export class CampaignNotificationComponent {
   readonly canGoPreviousPage = computed(() => !this.notificationPage().first);
   readonly canGoNextPage = computed(() => !this.notificationPage().last);
 
-  constructor() {
-    effect(() => {
-      const campaign = this.campaign();
-      if (!campaign) {
+    constructor() {
+      effect(() => {
+        const campaign = this.campaign();
+        if (!campaign) {
+          this.resetNotificationState();
+          return;
+        }
         this.resetNotificationState();
-        return;
-      }
-      this.resetNotificationState();
-      this.loadNotifications(0, {
-        ...defaultNotificationFilters,
-        size: defaultNotificationFilters.size,
+        this.loadNotifications(0, {
+          ...defaultNotificationFilters,
+          size: defaultNotificationFilters.size,
+        });
       });
-    });
-    this.searchService
-      .getSearch()
-      .pipe(debounceTime(250))
-      .subscribe((keyword) => {
-        if (keyword == null) { return; }
-        if (!this.campaign()) { return; }
-        const nextFilters = {
-          ...this.notificationFilters(),
-          keyWord: keyword,
-          page: 0,
-        };
-        this.notificationFilters.set(nextFilters);
-        this.loadNotifications(0, nextFilters);
-      });
-  }
+      this.searchService
+        .getSearch()
+        .pipe(debounceTime(250))
+        .subscribe((keyword) => {
+          if (keyword == null) { return; }
+          if (!this.campaign()) { return; }
+          const nextFilters = {
+            ...this.notificationFilters(),
+            keyWord: keyword,
+            page: 0,
+          };
+          this.notificationFilters.set(nextFilters);
+          this.loadNotifications(0, nextFilters);
+        });
+    }
 
   //list methods
   reloadSelectedCampaignNotifications(): void {
@@ -140,7 +143,7 @@ export class CampaignNotificationComponent {
     this.notificationDetails.set([]);
     this.notificationDetailsErrorMessage.set(null);
     this.notificationDetailsLoading.set(true);
-    this.showNotificationDetailsModal.set(true);
+    this.showNotificationDetailsPanel.set(true);
     this.notificationService.getNotificationDetails(notification.id).subscribe({
       next: (response) => {
         this.notificationDetails.set(normalizeNotificationDetails(response));
@@ -155,12 +158,47 @@ export class CampaignNotificationComponent {
     });
   }
 
-  closeNotificationDetailsModal(): void {
-    this.showNotificationDetailsModal.set(false);
+  closeNotificationDetailsPanel(): void {
+    this.showNotificationDetailsPanel.set(false);
     this.selectedNotification.set(null);
     this.notificationDetails.set([]);
     this.notificationDetailsErrorMessage.set(null);
     this.notificationDetailsLoading.set(false);
+    this.retryError.set(null);
+  }
+
+  retryNotification(): void {
+    const notification = this.selectedNotification();
+    if (!notification) { return; }
+    this.retryLoading.set(true);
+    this.retryError.set(null);
+    this.notificationService.retryNotification(notification.id).subscribe({
+      next: () => {
+        this.retryLoading.set(false);
+        this.reloadSelectedCampaignNotifications();
+        this.closeNotificationDetailsPanel();
+      },
+      error: () => {
+        this.retryLoading.set(false);
+        this.retryError.set('Không thể gửi lại thông báo. Vui lòng thử lại.');
+      },
+    });
+  }
+
+  retryNotificationFromTable(notification: CampaignNotificationSummary): void {
+    if (!notification) { return; }
+    this.retryLoading.set(true);
+    this.retryError.set(null);
+    this.notificationService.retryNotification(notification.id).subscribe({
+      next: () => {
+        this.retryLoading.set(false);
+        this.reloadSelectedCampaignNotifications();
+      },
+      error: () => {
+        this.retryLoading.set(false);
+        this.retryError.set('Không thể gửi lại thông báo. Vui lòng thử lại.');
+      },
+    });
   }
 
   //navigation methods
@@ -332,7 +370,8 @@ export class CampaignNotificationComponent {
     this.notificationDetails.set([]);
     this.notificationDetailsLoading.set(false);
     this.notificationDetailsErrorMessage.set(null);
-    this.showNotificationDetailsModal.set(false);
+    this.showNotificationDetailsPanel.set(false);
+    this.retryError.set(null);
   }
 
   //helper methods

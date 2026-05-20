@@ -527,32 +527,3 @@
   overflow: auto;
   padding: 0 0 8px;
 }
-
-@media (max-width: 1280px) {
-  .notification-filter-bar,
-  .pagination,
-  .pagination-left,
-  .pagination-right,
-  .toolbar-left {
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 768px) {
-  .notification-filter-bar,
-  .toolbar-left,
-  .pagination,
-  .pagination-left,
-  .pagination-right {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .modal-dialog {
-    max-height: 94vh;
-
-    .campaign-meta h3 {
-      font-size: 18px;
-    }
-  }
-}

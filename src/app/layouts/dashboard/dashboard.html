@@ -36,9 +36,6 @@
 
   <nav class="dashboard-tabbar">
     <div class="tab-groups">
-      <button class="tab-item" [class.active]="currentTab() === 'dashboard'" (click)="selectTab('dashboard')">
-        <i class="fas fa-th-large"></i> Trang chủ
-      </button>
       <button class="tab-item" [class.active]="currentTab() === 'campaigns'" (click)="selectTab('campaigns')">
         <i class="fas fa-chart-bar"></i> Chiến dịch
       </button>
@@ -51,11 +48,6 @@
 
   <main class="dashboard-content">
     @switch (currentTab()) {
-      @case ('dashboard') {
-        <div class="tab-content">
-          <p>Trang chủ</p>
-        </div>
-      }
       @case ('campaigns') {
         <div class="tab-content">
           <app-campaign></app-campaign>

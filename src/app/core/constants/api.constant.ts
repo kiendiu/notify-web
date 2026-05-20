@@ -15,6 +15,7 @@ export class ApiConstant {
     USERS_SEARCH: `${this.BASE_URL}/admin/users/search`,
     NOTIFICATIONS: (campaignId: string | number) => `${this.BASE_URL}/admin/campaigns/${campaignId}/notifications`,
     NOTIFICATION_DETAILS: (notificationId: string | number) => `${this.BASE_URL}/admin/campaigns/notifications/${notificationId}/details`,
+    NOTIFICATION_RETRY: (notificationId: string | number) => `${this.BASE_URL}/admin/campaigns/${notificationId}/retry`,
   };
 
 }
