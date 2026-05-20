@@ -34,8 +34,8 @@
             <input
               type="text"
               placeholder="Ví dụ: Flash Sale Tháng 10 - All Users"
-              [value]="campaignName()"
-              (change)="campaignName.set($any($event.target).value)"
+              [value]="formService.campaignName()"
+              (change)="formService.campaignName.set($any($event.target).value)"
             />
           </div>
 
@@ -45,8 +45,8 @@
               <label>ĐỐI TƯỢNG</label>
 
               <select
-                [value]="targetType()"
-                (change)="onTargetTypeChange($any($event.target).value)"
+                [value]="formService.targetType()"
+                (change)="formService.onTargetTypeChange($any($event.target).value)"
               >
                 <option value="ALL">Tất cả</option>
                 <option value="ACTIVE">Hoạt động</option>
@@ -60,19 +60,19 @@
 
               <input 
                 type="number" 
-                [value]="ratePerHour()"
-                (change)="ratePerHour.set($any($event.target).value)"
+                [value]="formService.ratePerHour()"
+                (change)="formService.ratePerHour.set($any($event.target).value)"
               />
             </div>
           </div>
 
-          @if (isSpecificTarget()) {
+          @if (formService.isSpecificTarget()) {
             <div class="form-group full-width">
               <label>NGƯỜI NHẬN</label>
 
               <div class="user-picker-wrapper">
-                <button type="button" class="user-picker-button" (click)="openUserModal()">
-                  @if (selectedUserIds().length > 0) {
+                <button type="button" class="user-picker-button" (click)="formService.openUserModal()">
+                  @if (formService.selectedUserIds().length > 0) {
                     <span>{{ selectedRecipientNamesLabel() }}</span>
                   } @else {
                     <span>-- Chọn người nhận --</span>
@@ -82,24 +82,24 @@
               </div>
 
               <!-- User Modal -->
-              @if (showUserModal()) {
+              @if (formService.showUserModal()) {
                 <div class="user-modal">
-                  <div class="modal-backdrop" (click)="closeUserModal()"></div>
+                  <div class="modal-backdrop" (click)="formService.closeUserModal()"></div>
                   <div class="modal-dialog">
                     <div class="modal-header">
-                      <input type="text" placeholder="Tìm theo tên hoặc email..." (input)="userSearch.set($any($event.target).value)" />
+                      <input type="text" placeholder="Tìm theo tên hoặc email..." (input)="formService.userSearch.set($any($event.target).value)" />
                       <div class="modal-header-buttons">
-                        @if (selectedUserIds().length > 0) {
-                          <button type="button" class="btn-clear-users" (click)="clearUserSelection()">Bỏ chọn tất cả</button>
+                        @if (formService.selectedUserIds().length > 0) {
+                          <button type="button" class="btn-clear-users" (click)="formService.clearUserSelection()">Bỏ chọn tất cả</button>
                         }
-                        <button type="button" class="btn-close" (click)="closeUserModal()">Đóng</button>
+                        <button type="button" class="btn-close" (click)="formService.closeUserModal()">Đóng</button>
                       </div>
                     </div>
                     <div class="user-list">
                       @for (user of filteredUsers(); track trackByUserId($index, user)) {
-                        <div class="user-item" [class.selected]="isUserSelected(user.id)">
+                        <div class="user-item" [class.selected]="formService.isUserSelected(user.id)">
                           <label class="user-checkbox-label">
-                            <input type="checkbox" [checked]="isUserSelected(user.id)" (change)="toggleUserSelection(user.id)" />
+                            <input type="checkbox" [checked]="formService.isUserSelected(user.id)" (change)="formService.toggleUserSelection(user.id)" />
                             <span>{{ user.name }}</span>
                           </label>
                           <span class="user-email">{{ user.email }}</span>
@@ -128,8 +128,8 @@
               <button
                 type="button"
                 class="channel-item"
-                [class.active]="selectedChannels().includes('PUSH')"
-                (click)="toggleChannel('PUSH')"
+                [class.active]="formService.selectedChannels().includes('PUSH')"
+                (click)="formService.toggleChannel('PUSH')"
               >
                 <i class="fas fa-mobile-alt"></i>
                 <span>PUSH</span>
@@ -138,8 +138,8 @@
               <button
                 type="button"
                 class="channel-item"
-                [class.active]="selectedChannels().includes('EMAIL')"
-                (click)="toggleChannel('EMAIL')"
+                [class.active]="formService.selectedChannels().includes('EMAIL')"
+                (click)="formService.toggleChannel('EMAIL')"
               >
                 <i class="far fa-envelope"></i>
                 <span>EMAIL</span>
@@ -148,8 +148,8 @@
               <button
                 type="button"
                 class="channel-item"
-                [class.active]="selectedChannels().includes('SMS')"
-                (click)="toggleChannel('SMS')"
+                [class.active]="formService.selectedChannels().includes('SMS')"
+                (click)="formService.toggleChannel('SMS')"
               >
                 <i class="far fa-comment-alt"></i>
                 <span>SMS</span>
@@ -163,11 +163,11 @@
 
             <div
               class="template-picker"
-              (click)="openTemplateModal()"
+              (click)="formService.openTemplateModal()"
             >
               <span>
-                @if (selectedTemplate()) {
-                  {{ selectedTemplate() }}
+                @if (formService.selectedTemplate()) {
+                  {{ formService.selectedTemplate() }}
                 } @else {
                   -- Chọn template --
                 }
@@ -177,32 +177,32 @@
             </div>
           </div>
           <!-- Template Modal -->
-          @if (showTemplateModal()) {
+          @if (formService.showTemplateModal()) {
             <div class="template-modal">
-              <div class="modal-backdrop" (click)="closeTemplateModal()"></div>
+              <div class="modal-backdrop" (click)="formService.closeTemplateModal()"></div>
               <div class="modal-dialog">
                 <div class="modal-header">
-                  <input type="text" placeholder="Tìm kiếm template..." (input)="templateSearch.set($any($event.target).value)" />
+                  <input type="text" placeholder="Tìm kiếm template..." (input)="formService.templateSearch.set($any($event.target).value)" />
                   <div class="modal-header-buttons">
-                    @if (selectedTemplate()) {
-                      <button type="button" class="btn-clear-template" (click)="clearTemplate()">Bỏ chọn</button>
+                    @if (formService.selectedTemplate()) {
+                      <button type="button" class="btn-clear-template" (click)="formService.clearTemplate()">Bỏ chọn</button>
                     }
-                    <button type="button" class="btn-close" (click)="closeTemplateModal()">Đóng</button>
+                    <button type="button" class="btn-close" (click)="formService.closeTemplateModal()">Đóng</button>
                   </div>
                 </div>
                 <div class="template-list">
                   @for (template of filteredTemplates(); track trackByTemplateId($index, template)) {
-                    <div class="template-card" [class.selected]="template.templateName === selectedTemplate()">
+                    <div class="template-card" [class.selected]="template.templateName === formService.selectedTemplate()">
                       <div class="template-card-body">
                         <div class="template-name">{{ template.templateName }}</div>
                         <div class="template-subject">{{ template.subject }}</div>
                         <div class="template-content">{{ template.content }}</div>
                       </div>
                       <div class="template-card-action">
-                        @if (template.templateName === selectedTemplate()) {
+                        @if (template.templateName === formService.selectedTemplate()) {
                           <span class="badge-selected">✓ Đã chọn</span>
                         } @else {
-                          <button type="button" class="btn-choose" (click)="selectTemplateFromModal(template.templateName)">Chọn</button>
+                          <button type="button" class="btn-choose" (click)="formService.selectTemplateFromModal(template.templateName)">Chọn</button>
                         }
                       </div>
                     </div>
@@ -219,9 +219,9 @@
             <input
               type="text"
               placeholder="Tiêu đề hiển thị..."
-              [value]="pushTitle()"
-              [disabled]="!!selectedTemplate()"
-              (input)="onPushTitleChange($any($event.target).value)"
+              [value]="formService.pushTitle()"
+              [disabled]="!!formService.selectedTemplate()"
+              (input)="formService.onPushTitleChange($any($event.target).value)"
             />
           </div>
 
@@ -232,9 +232,9 @@
             <textarea
               rows="5"
               placeholder="Nội dung thông báo..."
-              [value]="pushBody()"
-              [disabled]="!!selectedTemplate()"
-              (input)="onPushBodyChange($any($event.target).value)"
+              [value]="formService.pushBody()"
+              [disabled]="!!formService.selectedTemplate()"
+              (input)="formService.onPushBodyChange($any($event.target).value)"
             ></textarea>
           </div>
 
@@ -245,8 +245,8 @@
             <input
               type="text"
               placeholder="https://app.example.com/promo"
-              [value]="pushActionUrl()"
-              (change)="pushActionUrl.set($any($event.target).value)"
+              [value]="formService.pushActionUrl()"
+              (change)="formService.pushActionUrl.set($any($event.target).value)"
             />
           </div>
 
@@ -258,8 +258,8 @@
               <div class="date-input">
                 <input 
                   type="datetime-local"
-                  [value]="scheduledTime()"
-                  (change)="scheduledTime.set($any($event.target).value)"
+                  [value]="formService.scheduledTime()"
+                  (change)="formService.scheduledTime.set($any($event.target).value)"
                 />
               </div>
             </div>
@@ -270,8 +270,8 @@
               <div class="date-input">
                 <input 
                   type="datetime-local"
-                  [value]="endTime()"
-                  (change)="endTime.set($any($event.target).value)"
+                  [value]="formService.endTime()"
+                  (change)="formService.endTime.set($any($event.target).value)"
                 />
               </div>
             </div>
@@ -290,10 +290,10 @@
             <button
               class="btn-submit"
               type="button"
-              [disabled]="isSubmitting() || !canSubmit()"
-              (click)="createCampaign()"
+              [disabled]="formService.isSubmitting() || !formService.canSubmit()"
+              (click)="formService.createCampaign()"
             >
-              @if (isSubmitting()) {
+              @if (formService.isSubmitting()) {
                 Đang tạo...
               } @else {
                 Tạo chiến dịch
@@ -301,14 +301,14 @@
             </button>
           </div>
 
-          @if (submitError()) {
-            <div class="form-error">{{ submitError() }}</div>
+          @if (formService.submitError()) {
+            <div class="form-error">{{ formService.submitError() }}</div>
           }
         </div>
 
         <!-- RIGHT -->
         <app-campaign-preview
-          [selectedChannels]="selectedChannels()"
+          [selectedChannels]="formService.selectedChannels()"
           [pushPreview]="pushPreview()"
           [emailPreview]="emailPreview()"
         />

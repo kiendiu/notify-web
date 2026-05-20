@@ -3,7 +3,7 @@ import {BehaviorSubject,Observable, tap, throwError,} from 'rxjs';
 
 import { BaseApiService } from '../core/services/base_api.service';
 import { ApiConstant } from '../core/constants/api.constant';
-import { TokenStorageService } from './token-storage.service';
+import { TokenStorageService } from '../core/services/token-storage.service';
 
 import {
   AuthPayload,

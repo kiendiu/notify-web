@@ -8,7 +8,7 @@ import {
 } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, filter, take, switchMap } from 'rxjs/operators';
-import { TokenStorageService } from '../../services/token-storage.service';
+import { TokenStorageService } from '../services/token-storage.service';
 import { AuthService } from '../../services/auth.service';
 
 @Injectable()
