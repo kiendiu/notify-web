@@ -361,15 +361,15 @@
 
 .btn-retry-primary {
   width: 100%;
-  background: #003b95;
+  background: #dc2626;
   color: #fff;
 
   i {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   &:hover:not(:disabled) {
-    background: #002a6b;
+    background: #b91c1c;
     transform: translateY(-1px);
   }
 

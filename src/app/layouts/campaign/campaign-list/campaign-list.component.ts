@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, output, signal,} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, output, signal,} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { debounceTime } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SearchService } from '../../../services/search.service';
@@ -19,6 +20,7 @@ export class CampaignListComponent implements OnInit {
 	//dependency injections
 	private readonly store = inject(Store);
 	private readonly searchService = inject(SearchService);
+	private readonly destroyRef = inject(DestroyRef);
 
 	//outputs
 	readonly create = output<void>();
@@ -58,10 +60,11 @@ export class CampaignListComponent implements OnInit {
 
 	//lifecycle methods
 	ngOnInit(): void {
+		this.store.dispatch(CampaignActions.connectCampaignRealtime());
 		this.loadCampaigns();
 		this.searchService
 			.getSearch()
-			.pipe(debounceTime(250))
+			.pipe(debounceTime(250), takeUntilDestroyed(this.destroyRef))
 			.subscribe((keyword) => {
 				this.searchKeyword.set(keyword);
 				this.store.dispatch(

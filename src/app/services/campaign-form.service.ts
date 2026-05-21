@@ -237,6 +237,7 @@ export class CampaignFormService {
 	// Submit campaign method
 	createCampaign(): void {
 		this.submitError.set('');
+		this.isSubmitting.set(true);
 		if (!this.canSubmit()) {
 			if (!this.selectedChannels().length) {
 				this.submitError.set('Vui lòng chọn ít nhất một kênh gửi.');

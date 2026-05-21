@@ -7,6 +7,7 @@ import {
 	CampaignNotificationSearchResponse,
 	NotificationDetailsResponse,
 } from '../management/models/notification.model';
+import { ActivitySocketEvent } from '../core/websocket/websocket.models';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
@@ -44,6 +45,12 @@ export class NotificationService {
 		return this.http.post<void>(
 			ApiConstant.CAMPAIGNS.NOTIFICATION_RETRY(notificationId),
 			{},
+		);
+	}
+
+	getRecentActivities(): Observable<ActivitySocketEvent[]> {
+		return this.http.get<ActivitySocketEvent[]>(
+			ApiConstant.CAMPAIGNS.ACTIVITIES_RECENT,
 		);
 	}
 }

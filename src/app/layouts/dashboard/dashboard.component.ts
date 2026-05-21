@@ -13,9 +13,10 @@ import { CampaignComponent } from '../campaign/campaign.component';
   styleUrl: './dashboard.scss'
 })
 export class DashboardComponent implements OnInit {
-  currentTab = signal<'dashboard' | 'campaigns' | 'notification' | 'settings'>('dashboard');
-  showLogoutModal = signal(false);
-  userEmail = signal('user@example.com');
+  readonly currentTab = signal<'campaigns'>('campaigns');
+  readonly showLogoutModal = signal(false);
+
+  // No recent-activities on dashboard per user request
 
   constructor(
     private authService: AuthService,
@@ -27,10 +28,13 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     if (!this.authService.isAuthenticated()) {
       this.router.navigate(['/login']);
+      return;
     }
+
+    // recent activities removed
   }
 
-  selectTab(tab: 'dashboard' | 'campaigns' | 'notification' | 'settings'): void {
+  selectTab(tab: 'campaigns'): void {
     this.currentTab.set(tab);
   }
 
@@ -49,5 +53,16 @@ export class DashboardComponent implements OnInit {
 
   onHeaderSearch(keyword: string): void {
     this.searchService.setSearch(keyword ?? '');
+  }
+
+  private formatActivityTime(timestamp: number): string {
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(new Date(timestamp));
   }
 }

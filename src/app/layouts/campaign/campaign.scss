@@ -294,6 +294,41 @@
   padding: 14px;
 }
 
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-name {
+  font-weight: 800;
+  color: #111827;
+}
+
+.user-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  background: #f3f4f6;
+}
+
+.user-status.active {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #bbf7d0;
+}
+
+.user-status.inactive {
+  background: #fff7ed;
+  color: #92400e;
+  border: 1px solid #fed7aa;
+}
+
 .user-item.selected,
 .template-card.selected {
   border-color: #003b95;

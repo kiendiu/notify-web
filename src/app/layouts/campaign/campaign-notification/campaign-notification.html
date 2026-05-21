@@ -141,10 +141,10 @@
                     <button
                       type="button"
                       class="btn-retry"
-                      [disabled]="notification.status !== 'failed'"
-                      [class.disabled]="notification.status !== 'failed'"
+                      [disabled]="!isFailedNotification(notification.status)"
+                      [class.disabled]="!isFailedNotification(notification.status)"
                         (click)="retryNotificationFromTable(notification); $event.stopPropagation()"
-                        [title]="notification.status === 'failed' ? 'Gửi lại thông báo' : 'Chỉ có thể gửi lại thông báo thất bại'"
+                        [title]="isFailedNotification(notification.status) ? 'Gửi lại thông báo' : 'Chỉ có thể gửi lại thông báo thất bại'"
                     >
                       <i class="fas fa-redo-alt"></i>
                       <span>Gửi lại</span>

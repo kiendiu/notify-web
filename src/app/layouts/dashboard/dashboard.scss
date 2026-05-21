@@ -239,6 +239,70 @@ $bg-main: #f8f9fa;
 
     .tab-content {
       animation: fadeIn 0.3s ease-out;
+      display: grid;
+      gap: 18px;
+    }
+  }
+}
+
+.activity-stream-card {
+  background: #fff;
+  border: 1px solid $border-color;
+  border-radius: 12px;
+  padding: 16px;
+
+  .activity-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+
+    h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #111827;
+    }
+
+    span {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+  }
+
+  .activity-state {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+
+    &.error {
+      color: #dc2626;
+    }
+  }
+
+  .activity-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .activity-item {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+
+    p {
+      margin: 0;
+      color: #1f2937;
+      font-size: 14px;
+    }
+
+    time {
+      margin-top: 4px;
+      display: inline-block;
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 600;
     }
   }
 }

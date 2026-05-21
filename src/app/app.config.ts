@@ -14,7 +14,10 @@ import { campaignReducer } from './management/stores/campaign/campaign.reducer';
 import { CampaignEffects } from './management/stores/campaign/campaign.effects';
 import { previewReducer } from './management/stores/preview/preview.reducer';
 import { PreviewEffects } from './management/stores/preview/preview.effects';
-
+import { notificationReducer } from './management/stores/notification/notification.reducer';
+import { NotificationEffects } from './management/stores/notification/notification.effects';
+import { activityReducer } from './management/stores/activity/activity.reducer';
+import { ActivityEffects } from './management/stores/activity/activity.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -22,8 +25,20 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-    provideStore({ auth: authReducer, campaigns: campaignReducer, preview: previewReducer }),
-    provideEffects([AuthEffects, CampaignEffects, PreviewEffects]),
+    provideStore({
+      auth: authReducer,
+      campaigns: campaignReducer,
+      preview: previewReducer,
+      notifications: notificationReducer,
+      activities: activityReducer,
+    }),
+    provideEffects([
+      AuthEffects,
+      CampaignEffects,
+      PreviewEffects,
+      NotificationEffects,
+      ActivityEffects,
+    ]),
     provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
   ],
 };

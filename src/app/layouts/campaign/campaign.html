@@ -100,7 +100,12 @@
                         <div class="user-item" [class.selected]="formService.isUserSelected(user.id)">
                           <label class="user-checkbox-label">
                             <input type="checkbox" [checked]="formService.isUserSelected(user.id)" (change)="formService.toggleUserSelection(user.id)" />
-                            <span>{{ user.name }}</span>
+                            <div class="user-header">
+                              <span class="user-name">{{ user.name }}</span>
+                              <span class="user-status" [class.active]="user.status === 'ACTIVE'" [class.inactive]="user.status === 'INACTIVE'">
+                                {{ user.status === 'ACTIVE' ? 'Hoạt động' : (user.status === 'INACTIVE' ? 'Ngưng hoạt động' : user.status) }}
+                              </span>
+                            </div>
                           </label>
                           <span class="user-email">{{ user.email }}</span>
                         </div>

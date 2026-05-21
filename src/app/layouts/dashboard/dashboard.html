@@ -37,7 +37,7 @@
   <nav class="dashboard-tabbar">
     <div class="tab-groups">
       <button class="tab-item" [class.active]="currentTab() === 'campaigns'" (click)="selectTab('campaigns')">
-        <i class="fas fa-chart-bar"></i> Chiến dịch
+        <i class="fas fa-bullhorn"></i> Chiến dịch
       </button>
     </div>
 
@@ -47,13 +47,11 @@
   </nav>
 
   <main class="dashboard-content">
-    @switch (currentTab()) {
-      @case ('campaigns') {
-        <div class="tab-content">
-          <app-campaign></app-campaign>
-        </div>
-      }
-    }
+    <div class="tab-content">
+      <!-- Recent activities removed -->
+
+      <app-campaign></app-campaign>
+    </div>
   </main>
 
   @if (showLogoutModal()) {

@@ -10,6 +10,7 @@ import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { catchError, filter, take, switchMap } from 'rxjs/operators';
 import { TokenStorageService } from '../services/token-storage.service';
 import { AuthService } from '../../services/auth.service';
+import { ApiConstant } from '../constants/api.constant';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -23,6 +24,10 @@ export class AuthInterceptor implements HttpInterceptor {
   ) {}
 
   intercept( request: HttpRequest<unknown>, next: HttpHandler ): Observable<HttpEvent<unknown>> {
+    if (this.isAuthEndpoint(request.url)) {
+      return next.handle(request);
+    }
+
     const accessToken =
       this.tokenStorage.getAccessToken();
 
@@ -36,7 +41,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
-        if ( error.status === 401 && !this.isRefreshing ) {
+        if ( this.shouldRefresh(error.status) && !this.isRefreshing ) {
           this.isRefreshing = true;
           this.refreshTokenSubject.next(null);
 
@@ -64,7 +69,7 @@ export class AuthInterceptor implements HttpInterceptor {
               }),
             );
         } else if (
-          error.status === 401 &&
+          this.shouldRefresh(error.status) &&
           this.isRefreshing
         ) {
           return this.refreshTokenSubject
@@ -96,5 +101,13 @@ export class AuthInterceptor implements HttpInterceptor {
         Authorization: `Bearer ${token}`,
       },
     });
+  }
+
+  private shouldRefresh(status: number): boolean {
+    return status === 401 || status === 403;
+  }
+
+  private isAuthEndpoint(url: string): boolean {
+    return url.includes(ApiConstant.AUTH.GOOGLE_LOGIN) || url.includes(ApiConstant.AUTH.REFRESH_TOKEN);
   }
 }

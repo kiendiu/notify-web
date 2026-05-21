@@ -1,5 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { CampaignSearchResponse, CampaignSortDirection, CampaignStatusFilter, CampaignCreateRequest } from '../../models/campaign.model';
+import { CampaignLegacySocketEvent, CampaignSocketEvent } from '../../../core/websocket/websocket.models';
 
 export const loadCampaigns = createAction('[Campaign] Load Campaigns');
 
@@ -45,9 +46,17 @@ export const createCampaign = createAction(
 
 export const createCampaignSuccess = createAction(
   '[Campaign] Create Campaign Success',
+  props<{ request: CampaignCreateRequest }>(),
 );
 
 export const createCampaignFailure = createAction(
   '[Campaign] Create Campaign Failure',
   props<{ errorMessage: string }>(),
+);
+
+export const connectCampaignRealtime = createAction('[Campaign] Connect Realtime');
+
+export const applyCampaignSocketEvent = createAction(
+  '[Campaign] Apply Socket Event',
+  props<{ event: CampaignSocketEvent | CampaignLegacySocketEvent }>(),
 );
