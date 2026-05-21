@@ -28,12 +28,22 @@ export const notificationReducer = createReducer(
       ...state.filters,
       ...filters,
     },
+    page: {
+      ...state.page,
+      items: [],
+      number: 0,
+    },
   })),
   on(NotificationActions.setNotificationPage, (state, { page }) => ({
     ...state,
     filters: {
       ...state.filters,
       page,
+    },
+    page: {
+      ...state.page,
+      items: [],
+      number: page,
     },
   })),
   on(NotificationActions.loadNotifications, (state) => ({
