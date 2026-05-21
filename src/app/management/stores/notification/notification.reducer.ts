@@ -133,13 +133,13 @@ function applySocketEvents(
     if (action === 'CREATE') {
       const existingIndex = updated.findIndex((item) => item.id === payload.id);
       if (existingIndex === -1) {
-        updated = [payload, ...updated];
+        updated = [...updated, payload];
       } else {
         const existing = updated[existingIndex];
         const merged = { ...existing, ...payload };
         updated = [
-          merged,
           ...updated.slice(0, existingIndex),
+          merged,
           ...updated.slice(existingIndex + 1),
         ];
       }
@@ -171,19 +171,13 @@ function mergeNotificationItems(
     return loadedItems;
   }
 
-  const merged = [...loadedItems];
-
-  for (const item of existingItems) {
-    const index = merged.findIndex((candidate) => candidate.id === item.id);
-    if (index === -1) {
-      merged.unshift(item);
-      continue;
-    }
-
-    merged[index] = {
-      ...merged[index],
-      ...item,
-    };
+  const merged: typeof loadedItems = loadedItems.map((loaded) => {
+    const existing = existingItems.find((e) => e.id === loaded.id);
+    return existing ? { ...loaded, ...existing } : loaded;
+  });
+  const missing = existingItems.filter((e) => !loadedItems.some((l) => l.id === e.id));
+  if (missing.length > 0) {
+    merged.push(...missing);
   }
 
   return merged;

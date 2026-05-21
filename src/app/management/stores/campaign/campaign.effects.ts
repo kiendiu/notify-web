@@ -39,7 +39,7 @@ export class CampaignEffects {
       ofType(CampaignActions.createCampaign),
       switchMap(({ request }) =>
         this.campaignService.createCampaign(request).pipe(
-          map(() => CampaignActions.createCampaignSuccess({ request })),
+          map((campaign) => CampaignActions.createCampaignSuccess({ campaign })),
           catchError(() =>
             of(
               CampaignActions.createCampaignFailure({

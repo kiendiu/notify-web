@@ -29,7 +29,7 @@
         <div class="campaign-form-card">
           <!-- Campaign Name -->
           <div class="form-group full-width">
-            <label>TÊN ĐỊNH DANH CHIẾN DỊCH</label>
+            <label>Tên chiến dịch <span class="required-mark">*</span></label>
 
             <input
               type="text"
@@ -42,7 +42,7 @@
           <!-- Row -->
           <div class="form-row">
             <div class="form-group">
-              <label>ĐỐI TƯỢNG</label>
+              <label>Đối tượng</label>
 
               <select
                 [value]="formService.targetType()"
@@ -56,7 +56,7 @@
             </div>
 
             <div class="form-group">
-              <label>TỐC ĐỘ GỬI (LƯỢT/GIỜ)</label>
+              <label>Tốc độ gửi(lượt/giờ)</label>
 
               <input 
                 type="number" 
@@ -68,7 +68,7 @@
 
           @if (formService.isSpecificTarget()) {
             <div class="form-group full-width">
-              <label>NGƯỜI NHẬN</label>
+              <label>Người nhận <span class="required-mark">*</span></label>
 
               <div class="user-picker-wrapper">
                 <button type="button" class="user-picker-button" (click)="formService.openUserModal()">
@@ -92,7 +92,15 @@
                         @if (formService.selectedUserIds().length > 0) {
                           <button type="button" class="btn-clear-users" (click)="formService.clearUserSelection()">Bỏ chọn tất cả</button>
                         }
-                        <button type="button" class="btn-close" (click)="formService.closeUserModal()">Đóng</button>
+                        <button
+                          type="button"
+                          class="btn-close btn-confirm"
+                          aria-label="Xác nhận"
+                          title="Đóng"
+                          (click)="formService.closeUserModal()"
+                        >
+                          <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
                       </div>
                     </div>
                     <div class="user-list">
@@ -123,7 +131,7 @@
 
           <!-- Channel -->
           <div class="form-group full-width">
-            <label>KÊNH GỬI</label>
+            <label>Kênh gửi <span class="required-mark">*</span></label>
 
             <div class="channel-helper">
               Đã chọn: {{ selectedChannelsLabel() }}
@@ -137,7 +145,7 @@
                 (click)="formService.toggleChannel('PUSH')"
               >
                 <i class="fas fa-mobile-alt"></i>
-                <span>PUSH</span>
+                <span>Push</span>
               </button>
 
               <button
@@ -147,7 +155,7 @@
                 (click)="formService.toggleChannel('EMAIL')"
               >
                 <i class="far fa-envelope"></i>
-                <span>EMAIL</span>
+                <span>Email</span>
               </button>
 
               <button
@@ -157,14 +165,14 @@
                 (click)="formService.toggleChannel('SMS')"
               >
                 <i class="far fa-comment-alt"></i>
-                <span>SMS</span>
+                <span>Message</span>
               </button>
             </div>
           </div>
 
           <!-- Template -->
           <div class="form-group full-width">
-            <label>CHỌN TEMPLATE</label>
+            <label>Bản mẫu</label>
 
             <div
               class="template-picker"
@@ -192,7 +200,15 @@
                     @if (formService.selectedTemplate()) {
                       <button type="button" class="btn-clear-template" (click)="formService.clearTemplate()">Bỏ chọn</button>
                     }
-                    <button type="button" class="btn-close" (click)="formService.closeTemplateModal()">Đóng</button>
+                    <button
+                      type="button"
+                      class="btn-close btn-confirm"
+                      aria-label="Xác nhận"
+                      title="Đóng"
+                      (click)="formService.closeTemplateModal()"
+                    >
+                      <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
                   </div>
                 </div>
                 <div class="template-list">
@@ -219,7 +235,7 @@
 
           <!-- Title -->
           <div class="form-group full-width">
-            <label>TIÊU ĐỀ (PUSHTITLE)</label>
+            <label>Tiêu đề <span class="required-mark">*</span></label>
 
             <input
               type="text"
@@ -232,7 +248,7 @@
 
           <!-- Content -->
           <div class="form-group full-width">
-            <label>NỘI DUNG (PUSHBODY)</label>
+            <label>Nội dung <span class="required-mark">*</span></label>
 
             <textarea
               rows="5"
@@ -258,7 +274,7 @@
           <!-- Time -->
           <div class="form-row">
             <div class="form-group">
-              <label>THỜI GIAN BẮT ĐẦU</label>
+              <label>Bắt đầu <span class="required-mark">*</span></label>
 
               <div class="date-input">
                 <input 
@@ -270,7 +286,7 @@
             </div>
 
             <div class="form-group">
-              <label>THỜI GIAN KẾT THÚC</label>
+              <label>Kết thúc</label>
 
               <div class="date-input">
                 <input 

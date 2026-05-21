@@ -152,12 +152,12 @@ export class CampaignListComponent implements OnInit {
 	getDisplayStatus(status: string): string {
 		const normalized = status.toUpperCase();
 		switch (normalized) {
-			case 'SENT': return 'Đã gửi';
-			case 'PENDING': return 'Đang chờ';
-			case 'FAILED': return 'Thất bại';
-			case 'ACTIVE': return 'Đang hoạt động';
-			case 'COMPLETED': return 'Đã hoàn thành';
-			case 'EXPIRED': return 'Đã kết thúc';
+			// case 'SENT': return 'Đã gửi';
+			// case 'PENDING': return 'Đang chờ';
+			// case 'FAILED': return 'Thất bại';
+			case 'ACTIVE': return 'Hoạt động';
+			case 'COMPLETED': return 'Đã gửi';
+			case 'EXPIRED': return 'Hết hạn';
 			default: return status;
 		}
 	}
@@ -205,14 +205,15 @@ export class CampaignListComponent implements OnInit {
 	getStatusDotColor(status: string): string {
 		const normalized = status.toUpperCase();
 		switch (normalized) {
-			case 'SENT':
+			// case 'SENT':
 			case 'ACTIVE':
+				return '#c575e2';
 			case 'COMPLETED':
 				return '#10b981';
-			case 'FAILED':
+			// case 'FAILED':
 			case 'EXPIRED':
 				return '#ef4444';
-			case 'PENDING':
+			// case 'PENDING':
 			case 'DRAFT':
 				return '#f59e0b';
 			default:
@@ -223,14 +224,15 @@ export class CampaignListComponent implements OnInit {
 	getStatusTextStyleColor(status: string): string {
 		const normalized = status.toUpperCase();
 		switch (normalized) {
-			case 'SENT':
+			// case 'SENT':
 			case 'ACTIVE':
+				return '#c575e2';
 			case 'COMPLETED':
 				return '#047857';
-			case 'FAILED':
+			//case 'FAILED':
 			case 'EXPIRED':
 				return '#dc2626';
-			case 'PENDING':
+			///case 'PENDING':
 			case 'DRAFT':
 				return '#b45309';
 			default:

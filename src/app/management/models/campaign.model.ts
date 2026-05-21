@@ -26,6 +26,24 @@ export interface CampaignSummary {
   endTime?: string | null;
 }
 
+export interface CampaignCreateResponse {
+  id: number | string;
+  name: string;
+  ratePerHour: number;
+  channel: string;
+  status: string;
+  priority?: number;
+  templateName: string | null;
+  pushTitle: string | null;
+  pushBody: string | null;
+  pushActionUrl: string | null;
+  targetType: CampaignTargetType;
+  scheduledTime: string;
+  endTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CampaignCreateRequest {
   name: string;
   targetType: CampaignTargetType;

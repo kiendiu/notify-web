@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { RxStomp } from '@stomp/rx-stomp';
-import { Observable, filter, map, share } from 'rxjs';
+import { Observable, filter, map, share, tap } from 'rxjs';
 import { rxStompConfig } from '../configs/rx-stomp.config';
 import {
   ActivitySocketEvent,
@@ -22,7 +22,9 @@ export class NotificationWsService implements OnDestroy {
   watchCampaigns(): Observable<CampaignSocketEvent | CampaignLegacySocketEvent> {
     this.activateOnce();
     return this.rxStomp.watch(WS_TOPICS.CAMPAIGNS).pipe(
+      tap((message) => console.info('[WS][CAMPAIGNS] raw ->', message.body)),
       map((message) => this.parseCampaignMessage(message.body)),
+      tap((event) => console.info('[WS][CAMPAIGNS] parsed ->', event)),
       filter((event): event is CampaignSocketEvent | CampaignLegacySocketEvent => event !== null),
       share(),
     );
@@ -31,7 +33,9 @@ export class NotificationWsService implements OnDestroy {
   watchNotifications(): Observable<NotificationSocketEvent> {
     this.activateOnce();
     return this.rxStomp.watch(WS_TOPICS.NOTIFICATIONS).pipe(
+      tap((message) => console.info('[WS][NOTIFICATIONS] raw ->', message.body)),
       map((message) => this.parseJsonMessage<NotificationSocketEvent>(message.body)),
+      tap((event) => console.info('[WS][NOTIFICATIONS] parsed ->', event)),
       filter((event): event is NotificationSocketEvent => event !== null),
       share(),
     );
@@ -40,7 +44,9 @@ export class NotificationWsService implements OnDestroy {
   watchActivities(): Observable<ActivitySocketEvent> {
     this.activateOnce();
     return this.rxStomp.watch(WS_TOPICS.ACTIVITIES).pipe(
+      tap((message) => console.info('[WS][ACTIVITIES] raw ->', message.body)),
       map((message) => this.parseJsonMessage<ActivitySocketEvent>(message.body)),
+      tap((event) => console.info('[WS][ACTIVITIES] parsed ->', event)),
       filter((event): event is ActivitySocketEvent => event !== null),
       share(),
     );
@@ -57,14 +63,17 @@ export class NotificationWsService implements OnDestroy {
     if (this.hasActivated) {
       return;
     }
+    console.info('[WS] activating websocket client');
     this.rxStomp.activate();
     this.hasActivated = true;
   }
 
   private parseJsonMessage<T>(rawBody: string): T | null {
     try {
-      return JSON.parse(rawBody) as T;
+      const parsed = JSON.parse(rawBody) as T;
+      return parsed;
     } catch {
+      console.warn('[WS] failed to parse JSON message:', rawBody);
       return null;
     }
   }

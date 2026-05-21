@@ -81,7 +81,7 @@
                 <th class="text-center">Tiêu đề</th>
                 <th class="text-center">Gửi lúc</th>
                 <th class="text-center">Thiết bị</th>
-                <th class="text-center">Gửi lại</th>
+                <th class="text-center">Hoạt động</th>
               </tr>
             </thead>
 
@@ -141,13 +141,12 @@
                     <button
                       type="button"
                       class="btn-retry"
-                      [disabled]="!isFailedNotification(notification.status)"
+                      [disabled]="!isFailedNotification(notification.status) || retryLoading()"
                       [class.disabled]="!isFailedNotification(notification.status)"
-                        (click)="retryNotificationFromTable(notification); $event.stopPropagation()"
-                        [title]="isFailedNotification(notification.status) ? 'Gửi lại thông báo' : 'Chỉ có thể gửi lại thông báo thất bại'"
+                      (click)="retryNotificationFromTable(notification); $event.stopPropagation()"
+                      [title]="isFailedNotification(notification.status) ? 'Gửi lại thông báo' : 'Chỉ có thể gửi lại thông báo thất bại'"
                     >
-                      <i class="fas fa-redo-alt"></i>
-                      <span>Gửi lại</span>
+                      <i [class]="retryLoading() ? 'fas fa-spinner fa-spin' : 'fas fa-redo-alt'"></i>
                     </button>
                   </td>
                 </tr>

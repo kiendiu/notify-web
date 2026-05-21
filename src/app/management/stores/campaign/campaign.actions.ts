@@ -1,5 +1,5 @@
 import { createAction, props } from '@ngrx/store';
-import { CampaignSearchResponse, CampaignSortDirection, CampaignStatusFilter, CampaignCreateRequest } from '../../models/campaign.model';
+import { CampaignCreateRequest, CampaignCreateResponse, CampaignSearchResponse, CampaignSortDirection, CampaignStatusFilter } from '../../models/campaign.model';
 import { CampaignLegacySocketEvent, CampaignSocketEvent } from '../../../core/websocket/websocket.models';
 
 export const loadCampaigns = createAction('[Campaign] Load Campaigns');
@@ -46,7 +46,7 @@ export const createCampaign = createAction(
 
 export const createCampaignSuccess = createAction(
   '[Campaign] Create Campaign Success',
-  props<{ request: CampaignCreateRequest }>(),
+  props<{ campaign: CampaignCreateResponse }>(),
 );
 
 export const createCampaignFailure = createAction(

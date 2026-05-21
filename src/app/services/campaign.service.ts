@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConstant } from '../core/constants/api.constant';
-import { CampaignCreateRequest, CampaignSearchFilters, CampaignSearchResponse } from '../management/models/campaign.model';
+import { CampaignCreateRequest, CampaignCreateResponse, CampaignSearchFilters, CampaignSearchResponse } from '../management/models/campaign.model';
 import { BaseApiService } from '../core/services/base_api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -29,8 +29,8 @@ export class CampaignService extends BaseApiService {
     );
   }
 
-  createCampaign(request: CampaignCreateRequest): Observable<void> {
-    return this.http.post<void>(
+  createCampaign(request: CampaignCreateRequest): Observable<CampaignCreateResponse> {
+    return this.http.post<CampaignCreateResponse>(
       ApiConstant.CAMPAIGNS.CREATE,
       request,
     );

@@ -11,7 +11,7 @@ import {
 	selectTemplates,
 	selectUsers,
 } from '../../management/stores/preview/preview.selectors';
-import { CampaignSearchResponse, CampaignSummary } from '../../management/models/campaign.model';
+import { CampaignCreateResponse, CampaignSummary } from '../../management/models/campaign.model';
 import { CampaignFormService } from '../../services/campaign-form.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { CampaignListComponent } from './campaign-list/campaign-list.component';
@@ -38,9 +38,7 @@ export class CampaignComponent implements OnInit {
 	readonly formService = inject(CampaignFormService);
 
 	readonly view = signal<'list' | 'create' | 'notifications'>('list');
-	readonly selectedCampaign = signal<CampaignSummary | null>(null);
-	readonly pendingCreatedCampaignName = signal<string | null>(null);
-	readonly awaitingCreatedCampaignOpen = signal(false);
+	readonly selectedCampaign = signal<Pick<CampaignSummary, 'id'> | CampaignSummary | CampaignCreateResponse | null>(null);
 	readonly notificationComponent = CampaignNotificationComponent;
 	readonly handleNotificationBack = (): void => {
 		this.showList();
@@ -113,13 +111,11 @@ export class CampaignComponent implements OnInit {
 
 		this.actions$
 			.pipe(ofType(CampaignActions.createCampaignSuccess), takeUntilDestroyed(this.destroyRef))
-			.subscribe(({ request }) => {
+			.subscribe(({ campaign }) => {
 				this.formService.isSubmitting.set(false);
-				this.pendingCreatedCampaignName.set(request.name.trim());
-				this.awaitingCreatedCampaignOpen.set(true);
-				this.notificationService.show('success', 'Tạo chiến dịch thành công.', () => {
-					this.store.dispatch(CampaignActions.loadCampaigns());
-				});
+				this.openCampaignNotifications(campaign);
+				this.store.dispatch(CampaignActions.loadCampaigns());
+				this.notificationService.show('success', 'Tạo chiến dịch thành công.');
 			});
 
 		this.actions$
@@ -127,39 +123,13 @@ export class CampaignComponent implements OnInit {
 			.subscribe(({ errorMessage }) => {
 				this.formService.isSubmitting.set(false);
 				this.formService.submitError.set(errorMessage ?? 'Không thể tạo chiến dịch. Vui lòng thử lại.');
-				this.awaitingCreatedCampaignOpen.set(false);
-				this.pendingCreatedCampaignName.set(null);
 				this.notificationService.show('error', errorMessage ?? 'Không thể tạo chiến dịch. Vui lòng thử lại.');
-			});
-
-		this.actions$
-			.pipe(ofType(CampaignActions.loadCampaignsSuccess), takeUntilDestroyed(this.destroyRef))
-			.subscribe(({ response }) => {
-				if (!this.awaitingCreatedCampaignOpen()) {
-					return;
-				}
-
-				const pendingName = this.pendingCreatedCampaignName();
-				if (!pendingName) {
-					return;
-				}
-
-				const createdCampaign = this.findCreatedCampaign(response, pendingName);
-				if (!createdCampaign) {
-					return;
-				}
-
-				this.pendingCreatedCampaignName.set(null);
-				this.awaitingCreatedCampaignOpen.set(false);
-				this.openCampaignNotifications(createdCampaign);
 			});
 	}
 
 	showList(): void {
 		this.view.set('list');
 		this.selectedCampaign.set(null);
-		this.pendingCreatedCampaignName.set(null);
-		this.awaitingCreatedCampaignOpen.set(false);
 		this.store.dispatch(PreviewActions.clearPreview());
 		this.formService.resetFormState();
 	}
@@ -168,8 +138,6 @@ export class CampaignComponent implements OnInit {
 		this.view.set('create');
 		this.store.dispatch(PreviewActions.loadTemplates());
 		this.selectedCampaign.set(null);
-		this.pendingCreatedCampaignName.set(null);
-		this.awaitingCreatedCampaignOpen.set(false);
 	}
 
 	showCampaignNotifications(campaign: CampaignSummary): void {
@@ -215,27 +183,9 @@ export class CampaignComponent implements OnInit {
 			.filter((item) => item.length > 0);
 	}
 
-	private openCampaignNotifications(campaign: CampaignSummary): void {
+	private openCampaignNotifications(campaign: Pick<CampaignSummary, 'id'> | CampaignSummary | CampaignCreateResponse): void {
 		this.formService.resetFormState();
 		this.selectedCampaign.set(campaign);
 		this.view.set('notifications');
-	}
-
-	private findCreatedCampaign(
-		response: CampaignSearchResponse,
-		campaignName: string,
-	): CampaignSummary | null {
-		const items = response.content ?? response.items ?? response.data ?? [];
-		const normalizedName = campaignName.trim().toLowerCase();
-		const matchingItems = items.filter((item) => item.name.trim().toLowerCase() === normalizedName);
-		if (matchingItems.length === 0) {
-			return null;
-		}
-
-		return [...matchingItems].sort((left, right) => {
-			const leftTime = new Date(left.createdAt || 0).getTime();
-			const rightTime = new Date(right.createdAt || 0).getTime();
-			return rightTime - leftTime;
-		})[0] ?? null;
 	}
 }

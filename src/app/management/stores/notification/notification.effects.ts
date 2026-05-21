@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { bufferTime, catchError, filter, map, mergeMap, of, switchMap, withLatestFrom } from 'rxjs';
+import { bufferTime, catchError, filter, map, mergeMap, of, switchMap, withLatestFrom, tap } from 'rxjs';
 import { NotificationWsService } from '../../../core/websocket/notification-ws.service';
 import { NotificationService } from '../../../services/notification.service';
 import {
@@ -65,6 +65,7 @@ export class NotificationEffects {
         this.wsService.watchNotifications().pipe(
           bufferTime(250),
           filter((events) => events.length > 0),
+          tap((events) => console.info('[EFFECT][NOTIFICATIONS] received events ->', events)),
           map((events) => NotificationActions.applyNotificationSocketEvents({ events })),
           catchError(() => of(NotificationActions.clearNotificationState())),
         ),

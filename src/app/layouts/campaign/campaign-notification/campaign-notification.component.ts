@@ -40,7 +40,7 @@ export class CampaignNotificationComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly searchService = inject(SearchService);
 
-  readonly campaign = input<CampaignSummary | null>(null);
+  readonly campaign = input<Pick<CampaignSummary, 'id'> | CampaignSummary | null>(null);
   readonly onBack = input<(() => void) | null>(null);
 
   readonly notificationState = toSignal(this.store.select(selectNotificationState), {
