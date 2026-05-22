@@ -1,22 +1,62 @@
 <div class="login-container">
+  <div class="login-backdrop">
+    <span class="orb orb-one"></span>
+    <span class="orb orb-two"></span>
+    <span class="orb orb-three"></span>
+    <span class="grid-line grid-line-one"></span>
+    <span class="grid-line grid-line-two"></span>
+  </div>
+
   <div class="login-card">
-    <div class="login-icon">
+    <div class="brand-badge">
       <i class="fas fa-bell"></i>
+      <span>Admin Notify</span>
     </div>
 
-    <h1 class="login-title">Welcome Back</h1>
-    <p class="login-subtitle">
-      KIEN NOTIFY - Your Personal Notification Hub
-    </p>
+    <div class="hero-copy">
+      <p class="eyebrow">Enterprise Tier</p>
+      <h1 class="login-title">Chào mừng trở lại!</h1>
+      <p class="login-subtitle">
+        Đăng nhập để quản lý các chiến dịch thông báo.
+      </p>
+    </div>
+
+    <div class="feature-row" aria-hidden="true">
+      <div class="feature-chip">
+        <i class="fas fa-shield-alt"></i>
+        <span>An toàn</span>
+      </div>
+      <div class="feature-chip">
+        <i class="fas fa-bolt"></i>
+        <span>Nhanh chóng</span>
+      </div>
+      <div class="feature-chip">
+        <i class="fas fa-layer-group"></i>
+        <span>Đồng bộ</span>
+      </div>
+    </div>
 
     <div class="google-button-wrapper" [class.loading]="isLoading$ | async">
       <div #googleButtonContainer class="google-button-container"></div>
 
       @if (isLoading$ | async) {
         <div class="loading-overlay" aria-live="polite" aria-busy="true">
-          <div class="loading-content">
-            <div class="spinner"></div>
-            <p>Đang xác thực</p>
+          <div class="loading-card">
+            <div class="loading-orbital">
+              <span class="loading-ring"></span>
+              <span class="loading-ring loading-ring-inner"></span>
+              <i class="fas fa-lock"></i>
+            </div>
+
+            <div class="loading-content">
+              <p class="loading-title">Đang xác thực</p>
+              <p class="loading-subtitle">Đang xác thực quyền truy cập. Vui lòng chờ một chút.</p>
+              <div class="loading-dots" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
           </div>
         </div>
       }
@@ -27,6 +67,10 @@
         {{ error }}
       </div>
     }
+
+      <p class="login-footnote">
+        Được bảo vệ bởi cơ chế xác thực Google và quy trình kiểm tra thiết bị.
+      </p>
   </div>
 
 </div>
