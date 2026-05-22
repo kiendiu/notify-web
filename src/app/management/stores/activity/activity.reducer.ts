@@ -15,6 +15,8 @@ export const activityReducer = createReducer(
     ...state,
     loading: false,
     errorMessage: null,
+    loaded: true,
+    lastFetched: Date.now(),
     items: items.slice(0, MAX_ACTIVITIES),
   })),
   on(ActivityActions.loadRecentActivitiesFailure, (state, { errorMessage }) => ({

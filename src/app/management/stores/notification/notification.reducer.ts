@@ -57,6 +57,8 @@ export const notificationReducer = createReducer(
     return {
       ...state,
       loading: false,
+      loaded: true,
+      lastFetched: Date.now(),
       errorMessage: null,
       page: {
         ...normalized,

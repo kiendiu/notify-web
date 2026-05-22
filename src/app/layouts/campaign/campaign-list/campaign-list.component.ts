@@ -8,6 +8,7 @@ import { SearchService } from '../../../services/search.service';
 import * as CampaignActions from '../../../management/stores/campaign/campaign.actions';
 import { selectCampaignState } from '../../../management/stores/campaign/campaign.selectors';
 import { CampaignSortDirection, CampaignStatusFilter, CampaignSummary, defaultCampaignFilters, defaultCampaignPage } from '../../../management/models/campaign.model';
+import { initialCampaignState } from '../../../management/stores/campaign/campaign.state';
 @Component({
 	selector: 'app-campaign-list',
 	imports: [CommonModule],
@@ -32,21 +33,16 @@ export class CampaignListComponent implements OnInit {
 	//store state signals
 	readonly campaignState = toSignal(
 		this.store.select(selectCampaignState),{
-			initialValue: {
-				filters: defaultCampaignFilters,
-				page: defaultCampaignPage,
-				loading: false,
-				errorMessage: null,
-			},
+			initialValue: initialCampaignState,
 		},
 	);
 
 	//computed signals
-	readonly filters = computed(() =>this.campaignState().filters,);
-	readonly campaigns = computed(() =>this.campaignState().page.items,);
-	readonly page = computed(() =>this.campaignState().page,);
-	readonly loading = computed(() =>this.campaignState().loading,);
-	readonly errorMessage = computed(() =>this.campaignState().errorMessage,);
+	readonly filters = computed(() => (this.campaignState() ?? initialCampaignState).filters);
+	readonly campaigns = computed(() => (this.campaignState() ?? initialCampaignState).page.items);
+	readonly page = computed(() => (this.campaignState() ?? initialCampaignState).page);
+	readonly loading = computed(() => (this.campaignState() ?? initialCampaignState).loading);
+	readonly errorMessage = computed(() => (this.campaignState() ?? initialCampaignState).errorMessage);
 	readonly pageNumbers = computed(() =>
 		this.buildPageNumbers(
 			this.page().totalPages,

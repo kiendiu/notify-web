@@ -10,6 +10,8 @@ export interface NotificationState {
   filters: CampaignNotificationFilters;
   page: CampaignNotificationPage;
   loading: boolean;
+  loaded: boolean;
+  lastFetched: number | null;
   errorMessage: string | null;
   retryLoading: boolean;
   retryErrorMessage: string | null;
@@ -20,6 +22,8 @@ export const initialNotificationState: NotificationState = {
   filters: defaultNotificationFilters,
   page: defaultNotificationPage,
   loading: false,
+  loaded: false,
+  lastFetched: null,
   errorMessage: null,
   retryLoading: false,
   retryErrorMessage: null,

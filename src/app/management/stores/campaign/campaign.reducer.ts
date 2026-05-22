@@ -14,6 +14,8 @@ export const campaignReducer = createReducer(
   on(CampaignActions.loadCampaignsSuccess, (state, { response }) => ({
     ...state,
     loading: false,
+    loaded: true,
+    lastFetched: Date.now(),
     page: normalizeCampaignPage(response),
     errorMessage: null,
   })),

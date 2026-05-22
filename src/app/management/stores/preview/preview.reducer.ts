@@ -15,6 +15,8 @@ export const previewReducer = createReducer(
     ...state,
     templates,
     templatesLoading: false,
+    templatesLoaded: true,
+    templatesLastFetched: Date.now(),
     errorMessage: null,
   })),
   on(PreviewActions.loadTemplatesFailure, (state, { errorMessage }) => ({
@@ -33,6 +35,8 @@ export const previewReducer = createReducer(
     ...state,
     templatePreview,
     templatePreviewLoading: false,
+    templatePreviewLoaded: true,
+    templatePreviewLastFetched: Date.now(),
     errorMessage: null,
   })),
   on(PreviewActions.loadTemplatePreviewFailure, (state, { errorMessage }) => ({
@@ -63,6 +67,8 @@ export const previewReducer = createReducer(
     ...state,
     users,
     userSearchLoading: false,
+    usersLoaded: true,
+    usersLastFetched: Date.now(),
     errorMessage: null,
   })),
   on(PreviewActions.searchUsersFailure, (state, { errorMessage }) => ({
@@ -74,11 +80,12 @@ export const previewReducer = createReducer(
   // Clear Preview
   on(PreviewActions.clearPreview, (state) => ({
     ...state,
-    templates: [],
     templatePreview: null,
     pushPreview: null,
     emailPreview: null,
-    users: [],
     errorMessage: null,
+    templatesLoading: false,
+    templatePreviewLoading: false,
+    userSearchLoading: false,
   })),
 );

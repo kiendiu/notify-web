@@ -18,6 +18,7 @@ import { notificationReducer } from './management/stores/notification/notificati
 import { NotificationEffects } from './management/stores/notification/notification.effects';
 import { activityReducer } from './management/stores/activity/activity.reducer';
 import { ActivityEffects } from './management/stores/activity/activity.effects';
+import { StoreSyncEffects } from './core/sync/store-sync.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -38,6 +39,7 @@ export const appConfig: ApplicationConfig = {
       PreviewEffects,
       NotificationEffects,
       ActivityEffects,
+      StoreSyncEffects,
     ]),
     provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
   ],

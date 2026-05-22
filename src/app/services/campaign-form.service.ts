@@ -5,10 +5,15 @@ import * as PreviewActions from '../management/stores/preview/preview.actions';
 import { CampaignChannel, CampaignCreateRequest, CampaignTargetType } from '../management/models/campaign.model';
 import { selectTemplates } from '../management/stores/preview/preview.selectors';
 import * as CampaignActions from '../management/stores/campaign/campaign.actions';
+import { ClientCacheService } from '../core/cache/client-cache';
+import { CacheScopes } from '../core/cache/cache-keys';
+import { CACHE_TTL_MS } from '../core/cache/cache-policy';
+import { UserDto } from '../management/stores/preview/preview.state';
 
 @Injectable({ providedIn: 'root' })
 export class CampaignFormService {
 	private readonly store = inject(Store);
+	private readonly clientCache = inject(ClientCacheService);
 	private readonly templates = toSignal(
 		this.store.select(selectTemplates),
 		{ initialValue: [] }
@@ -182,6 +187,25 @@ export class CampaignFormService {
 		if (targetType !== 'SPECIFIC') {
 			this.selectedUserIds.set([]);
 			this.recipientSearchDraft.set('');
+			return;
+		}
+		const cacheKey = this.clientCache.buildKey(CacheScopes.previewUsers, {
+			keyword: '',
+			page: 0,
+			size: 100,
+		});
+		const cachedUsers = this.clientCache.get<UserDto[]>(cacheKey);
+		const cachedUserList = cachedUsers?.value ?? [];
+
+		if (cachedUserList.length > 0) {
+			this.store.dispatch(
+				PreviewActions.searchUsersSuccess({
+					users: cachedUserList,
+				}),
+			);
+		}
+
+		if (this.clientCache.isFresh(cachedUsers, CACHE_TTL_MS.previewUsers) && cachedUserList.length > 0) {
 			return;
 		}
 		this.store.dispatch(

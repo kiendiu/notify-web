@@ -46,6 +46,12 @@ export interface PreviewState {
   userSearchLoading: boolean;
   templatesLoading: boolean;
   templatePreviewLoading: boolean;
+  templatesLoaded: boolean;
+  templatesLastFetched: number | null;
+  usersLoaded: boolean;
+  usersLastFetched: number | null;
+  templatePreviewLoaded: boolean;
+  templatePreviewLastFetched: number | null;
   errorMessage: string | null;
 }
 
@@ -58,5 +64,11 @@ export const initialPreviewState: PreviewState = {
   userSearchLoading: false,
   templatesLoading: false,
   templatePreviewLoading: false,
+  templatesLoaded: false,
+  templatesLastFetched: null,
+  usersLoaded: false,
+  usersLastFetched: null,
+  templatePreviewLoaded: false,
+  templatePreviewLastFetched: null,
   errorMessage: null,
 };
