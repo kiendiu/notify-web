@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -14,6 +14,7 @@ import {
 import { CampaignCreateResponse, CampaignSummary } from '../../management/models/campaign.model';
 import { CampaignFormService } from '../../services/campaign-form.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { UiStateService } from '../../core/state/ui-state.service';
 import { CampaignListComponent } from './campaign-list/campaign-list.component';
 import { CampaignPreviewComponent } from './campaign-preview/campaign-preview.component';
 import { CampaignNotificationComponent } from './campaign-notification/campaign-notification.component';
@@ -33,6 +34,8 @@ import * as CampaignActions from '../../management/stores/campaign/campaign.acti
 export class CampaignComponent implements OnInit {
 	private readonly store = inject(Store);
 	private readonly destroyRef = inject(DestroyRef);
+	private readonly injector = inject(Injector);
+	private readonly uiState = inject(UiStateService);
 	private readonly actions$ = inject(Actions);
 	private readonly notificationService = inject(NotificationService);
 	readonly formService = inject(CampaignFormService);
@@ -107,6 +110,16 @@ export class CampaignComponent implements OnInit {
 	});
 
 	ngOnInit(): void {
+		this.uiState.bindViewState({
+			viewKey: 'campaign-view',
+			selectedKey: 'campaign-selected-id',
+			defaultView: 'list',
+			view: this.view,
+			selected: this.selectedCampaign,
+			injector: this.injector,
+			serializeSelected: (campaign) => String(campaign.id),
+			deserializeSelected: (rawValue) => ({ id: rawValue }),
+		});
 		this.store.dispatch(PreviewActions.loadTemplates());
 
 		this.actions$

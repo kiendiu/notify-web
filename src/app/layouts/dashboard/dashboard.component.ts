@@ -38,6 +38,11 @@ export class DashboardComponent implements OnInit {
     this.currentTab.set(tab);
   }
 
+  goHome(campaignShell: CampaignComponent): void {
+    this.selectTab('campaigns');
+    campaignShell.showList();
+  }
+
   openLogoutModal(): void {
     this.showLogoutModal.set(true);
   }

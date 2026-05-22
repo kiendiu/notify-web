@@ -43,6 +43,27 @@ $bg-main: #f8f9fa;
         @include flex-center;
         gap: 20px;
 
+        .header-brand {
+          display: flex;
+          align-items: flex-start;
+          padding: 0;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          text-align: left;
+
+          &:hover .header-title,
+          &:hover .header-subtitle {
+            opacity: 0.82;
+          }
+
+          &:focus-visible {
+            outline: 2px solid rgba($primary-blue, 0.35);
+            outline-offset: 4px;
+            border-radius: 10px;
+          }
+        }
+
         .title-block {
           line-height: 1.1;
           .header-title {
