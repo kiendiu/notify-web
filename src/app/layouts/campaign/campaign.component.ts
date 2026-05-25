@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Actions, ofType } from '@ngrx/effects';
+import { filter } from 'rxjs/operators';
+import { Action } from '@ngrx/store';
 
 import * as PreviewActions from '../../management/stores/preview/preview.actions';
 import {
@@ -19,6 +21,8 @@ import { CampaignListComponent } from './campaign-list/campaign-list.component';
 import { CampaignPreviewComponent } from './campaign-preview/campaign-preview.component';
 import { CampaignNotificationComponent } from './campaign-notification/campaign-notification.component';
 import * as CampaignActions from '../../management/stores/campaign/campaign.actions';
+
+type CreateCampaignSuccessAction = ReturnType<typeof CampaignActions.createCampaignSuccess>;
 
 @Component({
 	selector: 'app-campaign',
@@ -123,11 +127,17 @@ export class CampaignComponent implements OnInit {
 		this.store.dispatch(PreviewActions.loadTemplates());
 
 		this.actions$
-			.pipe(ofType(CampaignActions.createCampaignSuccess), takeUntilDestroyed(this.destroyRef))
+			.pipe(
+				ofType(CampaignActions.createCampaignSuccess),
+				filter(
+					(action: CreateCampaignSuccessAction & { meta?: { sourceId?: string } }) =>
+						!action.meta?.sourceId,
+				),
+				takeUntilDestroyed(this.destroyRef),
+			)
 			.subscribe(({ campaign }) => {
 				this.formService.isSubmitting.set(false);
 				this.openCampaignNotifications(campaign);
-				this.store.dispatch(CampaignActions.loadCampaigns());
 				this.notificationService.show('success', 'Tạo chiến dịch thành công.');
 			});
 

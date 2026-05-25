@@ -19,6 +19,7 @@ export class StoreSyncEffects {
         ofType(
           PreviewActions.loadTemplatesSuccess,
           PreviewActions.searchUsersSuccess,
+          CampaignActions.createCampaignSuccess,
           CampaignActions.loadCampaignsSuccess,
           CampaignActions.applyCampaignSocketEvent,
           NotificationActions.loadNotificationsSuccess,

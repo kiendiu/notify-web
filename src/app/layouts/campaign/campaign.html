@@ -1,16 +1,20 @@
 <div class="campaign-shell">
   @if (view() === 'list') {
-    <app-campaign-list
-      (create)="showCreate()"
-      (selectCampaign)="showCampaignNotifications($event)"
-    />
+    <div class="campaign-view-panel campaign-view-enter">
+      <app-campaign-list
+        (create)="showCreate()"
+        (selectCampaign)="showCampaignNotifications($event)"
+      />
+    </div>
   } @else if (view() === 'notifications') {
-    <ng-container
-      *ngComponentOutlet="notificationComponent; inputs: { campaign: selectedCampaign(), onBack: handleNotificationBack }"
-    ></ng-container>
+    <div class="campaign-view-panel campaign-view-enter">
+      <ng-container
+        *ngComponentOutlet="notificationComponent; inputs: { campaign: selectedCampaign(), onBack: handleNotificationBack }"
+      ></ng-container>
+    </div>
   } @else {
     <!-- CREATE CAMPAIGN -->
-    <section class="campaign-page">
+    <section class="campaign-page campaign-view-panel campaign-view-enter">
       <!-- Header -->
       <div class="page-header">
         <button class="back-btn" (click)="showList()">

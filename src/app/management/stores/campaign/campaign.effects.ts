@@ -79,6 +79,14 @@ export class CampaignEffects {
     ),
   );
 
+  refreshCampaignsAfterCreate$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CampaignActions.createCampaignSuccess),
+      tap(() => this.clientCache.clearByPrefix(CacheScopes.campaigns)),
+      map(() => CampaignActions.loadCampaigns()),
+    ),
+  );
+
   connectCampaignRealtime$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CampaignActions.connectCampaignRealtime),
