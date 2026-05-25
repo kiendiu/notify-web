@@ -39,11 +39,14 @@ export const retryNotification = createAction(
   props<{ notificationId: string | number }>(),
 );
 
-export const retryNotificationSuccess = createAction('[Notification] Retry Notification Success');
+export const retryNotificationSuccess = createAction(
+  '[Notification] Retry Notification Success',
+  props<{ notificationId: string | number }>(),
+);
 
 export const retryNotificationFailure = createAction(
   '[Notification] Retry Notification Failure',
-  props<{ errorMessage: string }>(),
+  props<{ notificationId: string | number; errorMessage: string }>(),
 );
 
 export const connectNotificationRealtime = createAction('[Notification] Connect Realtime');

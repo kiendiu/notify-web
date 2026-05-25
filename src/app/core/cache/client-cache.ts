@@ -49,7 +49,7 @@ export class ClientCacheService {
   }
 
   clearByPrefix(prefix: string): void {
-    for (const key of this.memoryCache.keys()) {
+    for (const key of Array.from(this.memoryCache.keys())) {
       if (key.startsWith(prefix)) {
         this.memoryCache.delete(key);
       }
@@ -59,11 +59,15 @@ export class ClientCacheService {
       return;
     }
 
+    const keysToRemove: string[] = [];
     for (let index = 0; index < window.localStorage.length; index += 1) {
       const storageKey = window.localStorage.key(index);
-      if (!storageKey || !storageKey.startsWith(this.storageKey(prefix))) {
-        continue;
+      if (storageKey && storageKey.startsWith(this.storageKey(prefix))) {
+        keysToRemove.push(storageKey);
       }
+    }
+
+    for (const storageKey of keysToRemove) {
       window.localStorage.removeItem(storageKey);
     }
   }

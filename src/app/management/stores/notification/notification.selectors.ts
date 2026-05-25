@@ -38,6 +38,11 @@ export const selectRetryNotificationLoading = createSelector(
   (state) => state.retryLoading,
 );
 
+export const selectRetryingNotificationId = createSelector(
+  selectNotificationState,
+  (state) => state.retryingNotificationId,
+);
+
 export const selectRetryNotificationError = createSelector(
   selectNotificationState,
   (state) => state.retryErrorMessage,

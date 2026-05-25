@@ -14,6 +14,7 @@ export interface NotificationState {
   lastFetched: number | null;
   errorMessage: string | null;
   retryLoading: boolean;
+  retryingNotificationId: string | number | null;
   retryErrorMessage: string | null;
 }
 
@@ -26,5 +27,6 @@ export const initialNotificationState: NotificationState = {
   lastFetched: null,
   errorMessage: null,
   retryLoading: false,
+  retryingNotificationId: null,
   retryErrorMessage: null,
 };

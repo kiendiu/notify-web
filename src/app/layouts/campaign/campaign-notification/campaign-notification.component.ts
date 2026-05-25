@@ -59,6 +59,7 @@ export class CampaignNotificationComponent {
   readonly notificationLoading = computed(() => this.notificationState().loading);
   readonly notificationErrorMessage = computed(() => this.notificationState().errorMessage);
   readonly retryLoading = computed(() => this.notificationState().retryLoading);
+  readonly retryingNotificationId = computed(() => this.notificationState().retryingNotificationId);
   readonly retryError = computed(() => this.notificationState().retryErrorMessage);
 
   readonly notificationCount = computed(() => this.notificationPage().totalElements);
@@ -86,6 +87,18 @@ export class CampaignNotificationComponent {
         NotificationActions.setActiveNotificationCampaign({ campaignId: String(campaign.id) }),
       );
       this.store.dispatch(NotificationActions.loadNotifications());
+    });
+
+    effect(() => {
+      const selected = this.selectedNotification();
+      if (!selected) {
+        return;
+      }
+
+      const latest = this.notificationItems().find((item) => item.id === selected.id);
+      if (latest && latest !== selected) {
+        this.selectedNotification.set(latest);
+      }
     });
 
     this.searchService
@@ -198,6 +211,14 @@ export class CampaignNotificationComponent {
 
   retryNotificationFromTable(notification: CampaignNotificationSummary): void {
     this.store.dispatch(NotificationActions.retryNotification({ notificationId: notification.id }));
+  }
+
+  isRetryingNotification(notificationId: number | string | null | undefined): boolean {
+    if (notificationId === null || notificationId === undefined) {
+      return false;
+    }
+
+    return String(this.retryingNotificationId()) === String(notificationId);
   }
 
   emitBack(): void {

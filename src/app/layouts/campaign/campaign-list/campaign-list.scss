@@ -807,37 +807,77 @@
   }
 }
 
-@media (max-width: 768px) {
-  .campaign-toolbar,
-  .toolbar-right,
-  .pagination,
-  .pagination-left,
-  .pagination-right,
-  .notification-header,
-  .notification-toolbar,
-  .notification-header-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
+@media (max-width: 1024px) {
 
   .campaign-toolbar {
-    align-items: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: nowrap;
   }
 
-  .toolbar-right,
-  .notification-toolbar {
+  .create-button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    flex-wrap: nowrap;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    padding-bottom: 4px;
+
+    scrollbar-width: thin;
+  }
+
+  .toolbar-field {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .toolbar-select {
+    min-width: 130px;
+  }
+
+  /* TABLE */
+  .campaign-card {
+    overflow: hidden;
+  }
+
+  .campaign-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .campaign-table {
+    min-width: 1000px;
+  }
+
+  /* PAGINATION */
+  .pagination {
+    flex-wrap: wrap;
     gap: 12px;
+  }
+
+  .pagination-left,
+  .pagination-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .pagination-pages {
     flex-wrap: wrap;
-  }
-
-  .toolbar-input {
-    min-width: 100%;
-  }
-
-  .modal-dialog {
-    max-height: 94vh;
   }
 }

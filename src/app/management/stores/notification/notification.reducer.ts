@@ -77,20 +77,30 @@ export const notificationReducer = createReducer(
     loading: false,
     errorMessage,
   })),
-  on(NotificationActions.retryNotification, (state) => ({
+  on(NotificationActions.retryNotification, (state, { notificationId }) => ({
     ...state,
     retryLoading: true,
+    retryingNotificationId: notificationId,
     retryErrorMessage: null,
+    page: {
+      ...state.page,
+      items: updateNotificationStatus(state.page.items, notificationId, 'PENDING'),
+    },
   })),
   on(NotificationActions.retryNotificationSuccess, (state) => ({
     ...state,
-    retryLoading: false,
     retryErrorMessage: null,
   })),
-  on(NotificationActions.retryNotificationFailure, (state, { errorMessage }) => ({
+  on(NotificationActions.retryNotificationFailure, (state, { notificationId, errorMessage }) => ({
     ...state,
     retryLoading: false,
+    retryingNotificationId:
+      state.retryingNotificationId === notificationId ? null : state.retryingNotificationId,
     retryErrorMessage: errorMessage,
+    page: {
+      ...state.page,
+      items: updateNotificationStatus(state.page.items, notificationId, 'FAILED'),
+    },
   })),
   on(NotificationActions.applyNotificationSocketEvents, (state, { events }) => {
     if (events.length === 0 || !state.activeCampaignId) {
@@ -98,12 +108,22 @@ export const notificationReducer = createReducer(
     }
 
     const nextItems = applySocketEvents(state.page.items, state.activeCampaignId, events);
-    if (nextItems === state.page.items) {
+    const nextRetryingNotificationId = shouldClearRetryingNotificationId(
+      state.retryingNotificationId,
+      events,
+    )
+      ? null
+      : state.retryingNotificationId;
+
+    if (nextItems === state.page.items && nextRetryingNotificationId === state.retryingNotificationId) {
       return state;
     }
 
     return {
       ...state,
+      retryLoading: nextRetryingNotificationId !== null,
+      retryingNotificationId: nextRetryingNotificationId,
+      retryErrorMessage: nextRetryingNotificationId === null ? null : state.retryErrorMessage,
       page: {
         ...state.page,
         items: nextItems,
@@ -183,4 +203,42 @@ function mergeNotificationItems(
   }
 
   return merged;
+}
+
+function updateNotificationStatus(
+  items: typeof initialNotificationState.page.items,
+  notificationId: string | number,
+  status: string,
+): typeof initialNotificationState.page.items {
+  const targetId = String(notificationId);
+  let updated = false;
+
+  const nextItems = items.map((item) => {
+    if (String(item.id) !== targetId) {
+      return item;
+    }
+
+    updated = true;
+    return {
+      ...item,
+      status,
+    };
+  });
+
+  return updated ? nextItems : items;
+}
+
+function shouldClearRetryingNotificationId(
+  retryingNotificationId: string | number | null,
+  events: NotificationSocketEvent[],
+): boolean {
+  if (retryingNotificationId === null) {
+    return false;
+  }
+
+  const targetId = String(retryingNotificationId);
+  return events.some((event) => {
+    const payloadId = event.data?.id;
+    return payloadId !== undefined && String(payloadId) === targetId;
+  });
 }

@@ -73,10 +73,11 @@ export class NotificationEffects {
       ofType(NotificationActions.retryNotification),
       switchMap(({ notificationId }) =>
         this.notificationService.retryNotification(notificationId).pipe(
-          map(() => NotificationActions.retryNotificationSuccess()),
+          map(() => NotificationActions.retryNotificationSuccess({ notificationId })),
           catchError(() =>
             of(
               NotificationActions.retryNotificationFailure({
+                notificationId,
                 errorMessage: 'Không thể gửi lại thông báo. Vui lòng thử lại.',
               }),
             ),
@@ -98,13 +99,6 @@ export class NotificationEffects {
           catchError(() => of(NotificationActions.clearNotificationState())),
         ),
       ),
-    ),
-  );
-
-  reloadAfterRetrySuccess$ = createEffect(() =>
-    this.actions$.pipe(
-      ofType(NotificationActions.retryNotificationSuccess),
-      map(() => NotificationActions.loadNotifications()),
     ),
   );
 }

@@ -141,12 +141,12 @@
                     <button
                       type="button"
                       class="btn-retry"
-                      [disabled]="!isFailedNotification(notification.status) || retryLoading()"
+                      [disabled]="!isFailedNotification(notification.status) || isRetryingNotification(notification.id)"
                       [class.disabled]="!isFailedNotification(notification.status)"
                       (click)="retryNotificationFromTable(notification); $event.stopPropagation()"
                       [title]="isFailedNotification(notification.status) ? 'Gửi lại thông báo' : 'Chỉ có thể gửi lại thông báo thất bại'"
                     >
-                      <i [class]="retryLoading() ? 'fas fa-spinner fa-spin' : 'fas fa-redo-alt'"></i>
+                      <i [class]="isRetryingNotification(notification.id) ? 'fas fa-spinner fa-spin' : 'fas fa-redo-alt'"></i>
                     </button>
                   </td>
                 </tr>
@@ -213,7 +213,7 @@
       [notificationDetails]="notificationDetails()"
       [notificationDetailsLoading]="notificationDetailsLoading()"
       [notificationDetailsErrorMessage]="notificationDetailsErrorMessage()"
-      [retryLoading]="retryLoading()"
+      [retryLoading]="isRetryingNotification(selectedNotification()?.id)"
       [retryError]="retryError()"
       (close)="closeNotificationDetailsPanel()"
       (retry)="retryNotification()"
