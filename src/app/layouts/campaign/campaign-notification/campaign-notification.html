@@ -1,0 +1,222 @@
+<div class="notification-page">
+  @if (campaign()) {
+    <div class="notification-toolbar">
+      <div class="toolbar-left">
+        <button type="button" class="back-btn notification-back-btn" (click)="emitBack()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+
+        <div class="campaign-meta">
+          <h3>Danh sách thông báo</h3>
+          <p>Xem danh sách thông báo đã gửi trong chiến dịch này và trạng thái chi tiết của chúng.</p>
+        </div>
+      </div>
+
+      <div class="notification-filter-bar">
+        <div class="toolbar-field">
+          <span>TRẠNG THÁI</span>
+
+          <select
+            class="toolbar-select"
+            [value]="notificationFilters().status"
+            (change)="updateNotificationStatus($any($event.target).value)">
+            <option value="">Tất cả</option>
+            <option value="sent">Đã gửi</option>
+            <option value="pending">Đang chờ</option>
+            <option value="failed">Thất bại</option>
+          </select>
+        </div>
+
+        <div class="toolbar-field">
+          <span>LOẠI KÊNH</span>
+
+          <select
+            class="toolbar-select"
+            [value]="notificationFilters().channel"
+            (change)="updateNotificationChannel($any($event.target).value)"
+          >
+            <option value="">Tất cả</option>
+            <option value="push">Push</option>
+            <option value="email">Email</option>
+            <option value="sms">Sms</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    @if (notificationErrorMessage()) {
+      <div class="notification-alert error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ notificationErrorMessage() }}</span>
+      </div>
+    }
+
+    <div class="notification-card">
+      @if (notificationLoading() && notificationItems().length === 0) {
+        <div class="notification-empty-state loading">
+          <div class="empty-icon">
+            <i class="fas fa-spinner fa-spin"></i>
+          </div>
+
+          <h3>Đang tải thông báo</h3>
+          <p>Hệ thống đang lấy danh sách thông báo của chiến dịch đã chọn.</p>
+        </div>
+      } @else if (hasNoNotifications()) {
+        <div class="notification-empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-bell-slash"></i>
+          </div>
+
+          <h3>Chưa có thông báo nào</h3>
+          <p>Chiến dịch này chưa có bản ghi thông báo phù hợp với bộ lọc hiện tại.</p>
+        </div>
+      } @else {
+        <div class="campaign-table-wrapper">
+          <table class="notification-table campaign-table">
+            <thead>
+              <tr>
+                <th class="text-left">Người nhận</th>
+                <th class="text-center">Kênh</th>
+                <th class="text-center">Trạng thái</th>
+                <th class="text-center">Tiêu đề</th>
+                <th class="text-center">Gửi lúc</th>
+                <th class="text-center">Thiết bị</th>
+                <th class="text-center">Hoạt động</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (notification of notificationItems(); track trackByNotificationId($index, notification)) {
+                <tr
+                  class="notification-row"
+                  [class.selected-row]="selectedNotification()?.id === notification.id"
+                  tabindex="0"
+                  role="button"
+                  (click)="openNotificationDetails(notification)"
+                  (keydown.enter)="openNotificationDetails(notification)"
+                  (keydown.space)="openNotificationDetails(notification)"
+                >
+                  <td class="text-left">
+                    <div class="notification-user">
+                      <strong>{{ notification.userName }}</strong>
+                      <span>ID: {{ notification.userId }}</span>
+                    </div>
+                  </td>
+
+                  <td class="text-center">
+                    <div [class]="'channel-badge ' + getChannelBadgeClass(notification.channel)">
+                      <i [class]="'fas ' + channelIcon(notification.channel)"></i>
+                      <span>{{ getDisplayChannel(notification.channel) }}</span>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="status-row">
+                      <span class="status-dot" [style.backgroundColor]="getStatusDotColor(notification.status)"></span>
+
+                      <span class="status-text" [style.color]="getStatusTextStyleColor(notification.status)">
+                        {{ getDisplayStatus(notification.status) }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td class="text-center">
+                    <div class="notification-title">
+                      <strong>{{ notification.title || '-' }}</strong>
+                      <span>{{ notification.body || '-' }}</span>
+                    </div>
+                  </td>
+
+                  <td class="text-center">
+                    <span class="date-text">{{ formatDate(notification.sentAt) }}</span>
+                  </td>
+
+                  <td class="text-center">
+                    <div class="device-count">
+                      <span>{{ getNotificationDeviceCount(notification) }}</span>
+                      <small>thiết bị</small>
+                    </div>
+                  </td>
+
+                  <td class="text-center">
+                    <button
+                      type="button"
+                      class="btn-retry"
+                      [disabled]="!isFailedNotification(notification.status) || isRetryingNotification(notification.id)"
+                      [class.disabled]="!isFailedNotification(notification.status)"
+                      (click)="retryNotificationFromTable(notification); $event.stopPropagation()"
+                      [title]="isFailedNotification(notification.status) ? 'Gửi lại thông báo' : 'Chỉ có thể gửi lại thông báo thất bại'"
+                    >
+                      <i [class]="isRetryingNotification(notification.id) ? 'fas fa-spinner fa-spin' : 'fas fa-redo-alt'"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (!hasNoNotifications()) {
+        <div class="pagination">
+          <div class="pagination-left">
+            <span>
+              Hiển thị {{ notificationItems().length }} trong số {{ notificationCount() }} thông báo
+            </span>
+          </div>
+
+          <div class="pagination-right">
+            <button
+              class="pagination-button"
+              [disabled]="!canGoPreviousPage()"
+              (click)="goToNotificationPage(notificationPage().number - 1)"
+            >
+              <i class="fas fa-chevron-left"></i> Trước
+            </button>
+
+            <div class="pagination-pages">
+              @for (pageNumber of pageNumbers(); track pageNumber) {
+                <button
+                  class="page-button"
+                  [class.active]="pageNumber === notificationPage().number"
+                  (click)="goToNotificationPage(pageNumber)"
+                >
+                  {{ pageNumber + 1 }}
+                </button>
+              }
+            </div>
+
+            <button
+              class="pagination-button"
+              [disabled]="!canGoNextPage()"
+              (click)="goToNotificationPage(notificationPage().number + 1)"
+            >
+              Tiếp <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="notification-empty-state no-selection">
+      <div class="empty-icon">
+        <i class="fas fa-layer-group"></i>
+      </div>
+
+      <h3>Chọn một chiến dịch để xem thông báo</h3>
+      <p>Nhấn vào nút xem ở một campaign phía trên để tải danh sách thông báo của campaign đó.</p>
+    </div>
+  }
+
+  @if (showNotificationDetailsPanel()) {
+    <app-notification-detail
+      [selectedNotification]="selectedNotification()"
+      [notificationDetails]="notificationDetails()"
+      [notificationDetailsLoading]="notificationDetailsLoading()"
+      [notificationDetailsErrorMessage]="notificationDetailsErrorMessage()"
+      [retryLoading]="isRetryingNotification(selectedNotification()?.id)"
+      [retryError]="retryError()"
+      (close)="closeNotificationDetailsPanel()"
+      (retry)="retryNotification()"
+    />
+  }
+</div>
