@@ -1,0 +1,1 @@
+export { CampaignsComponent } from './campaigns.component';

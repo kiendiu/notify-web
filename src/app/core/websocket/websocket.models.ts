@@ -1,5 +1,5 @@
-import { CampaignSummary } from '../../management/models/campaign.model';
-import { CampaignNotificationSummary } from '../../management/models/notification.model';
+import { CampaignSummary } from '../../managements/models/campaigns.model';
+import { CampaignNotificationSummary } from '../../managements/models/notifications.model';
 import { WebSocketEnvelope } from './websocket.types';
 
 export interface NotificationSocketEventData extends CampaignNotificationSummary {

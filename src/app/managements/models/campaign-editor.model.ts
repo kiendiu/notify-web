@@ -1,0 +1,1 @@
+export type CampaignEditorModel = Record<string, unknown>;

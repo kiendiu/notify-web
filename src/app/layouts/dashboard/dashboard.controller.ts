@@ -1,0 +1,1 @@
+export { DashboardComponent as DashboardController } from './dashboard.component';

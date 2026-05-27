@@ -1,0 +1,48 @@
+<div class="side-panel-wrapper">
+  <div class="side-panel-backdrop" (click)="onClose()"></div>
+  <div class="side-panel details-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <p class="section-label">Chi tiết thông báo</p>
+        <h3>{{ selectedNotification()?.title || 'Thông báo' }}</h3>
+        <p class="section-subtitle">{{ selectedNotification()?.userName }} · {{ getDisplayChannel(selectedNotification()?.channel || '') }}</p>
+      </div>
+      <button type="button" class="btn-close" (click)="onClose()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="panel-content">
+      <div class="notification-summary">
+        <div class="summary-item"><span class="summary-label">Người nhận:</span><span class="summary-value">{{ selectedNotification()?.userName || '-' }}</span></div>
+        <div class="summary-item"><span class="summary-label">Tiêu đề:</span><span class="summary-value">{{ selectedNotification()?.title || '-' }}</span></div>
+        <div class="summary-item"><span class="summary-label">Nội dung:</span><span class="summary-value">{{ selectedNotification()?.body || '-' }}</span></div>
+      </div>
+      @if (notificationDetailsLoading()) {
+        <div class="panel-loading"><i class="fas fa-spinner fa-spin"></i><span>Đang tải chi tiết thiết bị...</span></div>
+      } @else if (notificationDetailsErrorMessage()) {
+        <div class="notification-alert error panel-alert"><i class="fas fa-exclamation-circle"></i><span>{{ notificationDetailsErrorMessage() }}</span></div>
+      } @else if (notificationDetails().length === 0) {
+        <div class="notification-empty-state panel-empty"><div class="empty-icon"><i class="fas fa-mobile-screen-button"></i></div><h3>Không có dữ liệu thiết bị</h3><p>Thông báo này chưa trả về danh sách thiết bị liên quan.</p></div>
+      } @else {
+        <div class="device-section">
+          <h4 class="section-title">Danh sách thiết bị ({{ notificationDetails().length }})</h4>
+          <div class="device-list">
+            @for (detail of notificationDetails(); track trackByDeviceDetailId($index, detail)) {
+              <div class="device-item">
+                <div class="device-header"><span class="device-name">{{ detail.deviceName || 'Thiết bị không xác định' }}</span><span class="device-destination mono-text">{{ getNotificationDestination(detail) }}</span></div>
+                <div class="device-details">
+                  <div class="detail-row"><span class="detail-label">Trạng thái:</span><div class="status-row"><span class="status-dot" [style.backgroundColor]="getStatusDotColor(detail.status)"></span><span class="status-text" [style.color]="getStatusTextStyleColor(detail.status)">{{ getNotificationStatusText(detail.status) }}</span></div></div>
+                  <div class="detail-row"><span class="detail-label">Lần thử lại:</span><span>{{ getNotificationRetryText(detail) }}</span></div>
+                  <div class="detail-row"><span class="detail-label">Cập nhật lúc:</span><span>{{ formatDate(detail.updatedAt) }}</span></div>
+                  @if (detail.errorMessage) { <div class="detail-row error-row"><span class="detail-label">Lỗi:</span><span class="error-text">{{ detail.errorMessage }}</span></div> }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+    <div class="panel-footer">
+      @if (retryError()) { <div class="notification-alert error panel-alert"><i class="fas fa-exclamation-circle"></i><span>{{ retryError() }}</span></div> }
+      <button type="button" class="btn-primary btn-retry-primary" [disabled]="retryLoading() || !isFailedStatus(selectedNotification()?.status)" (click)="onRetry()">@if (retryLoading()) { <i class="fas fa-spinner fa-spin"></i><span>Đang gửi lại...</span> } @else { <i class="fas fa-redo-alt"></i><span>Gửi lại thông báo</span> }</button>
+    </div>
+  </div>
+</div>

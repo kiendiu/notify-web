@@ -1,12 +1,10 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
-import { AuthService } from '../../services/auth.service';
-import { AuthPayload } from '../../management/models/auth.model';
-import * as AuthActions from '../../management/stores/auth/auth.actions';
-import { selectIsLoading, selectErrorMessage, selectIsAuthenticated } from '../../management/stores/auth/auth.selectors';
+import { AuthService } from '../../data/services/auth.service';
+import { AuthPayload } from '../../managements/models/auth.model';
+import { AuthQuery } from '../../managements/queries/auth.query';
+import { AuthStateService } from '../../managements/states/login.state';
 
 declare global {
   interface Window {
@@ -23,20 +21,24 @@ declare global {
 export class LoginComponent implements OnInit {
   @ViewChild('googleButtonContainer', { static: false }) googleButtonContainer!: ElementRef;
 
-  isLoading$: Observable<boolean>;
-  errorMessage$: Observable<string | null>;
-  isAuthenticated$: Observable<boolean>;
   private readonly DEVICE_ID_STORAGE_KEY = 'web_device_id';
+  private readonly authState = inject(AuthStateService);
+
+  readonly isLoading = this.authState.isLoading;
+  readonly errorMessage = this.authState.errorMessage;
 
   constructor(
     private authService: AuthService,
     private router: Router,
-    private store: Store
+    private readonly authQuery: AuthQuery
   ) {
     this.initializeDeviceId();
-    this.isLoading$ = this.store.select(selectIsLoading);
-    this.errorMessage$ = this.store.select(selectErrorMessage);
-    this.isAuthenticated$ = this.store.select(selectIsAuthenticated);
+
+    effect(() => {
+      if (this.authState.isAuthenticated()) {
+        this.router.navigate(['/dashboard']);
+      }
+    });
   }
 
   private initializeDeviceId(): void {
@@ -111,6 +113,6 @@ export class LoginComponent implements OnInit {
       deviceName: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Browser',
       osVersion: navigator.platform
     };
-    this.store.dispatch(AuthActions.login({ payload }));
+    this.authQuery.login(payload);
   }
 }

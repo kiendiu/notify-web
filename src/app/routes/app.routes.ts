@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from '../layouts/login/login.component';
 import { DashboardComponent } from '../layouts/dashboard/dashboard.component';
-import { CampaignComponent } from '../layouts/campaign/campaign.component';
-import { authGuard } from '../services/auth.guard';
+import { CampaignsComponent } from '../layouts/campaign/campaigns.component';
+import { authGuard } from '../core/auth/auth.guard';
 
 export const routes: Routes = [
   {
@@ -21,7 +21,7 @@ export const routes: Routes = [
   },
   {
     path: 'campaigns',
-    component: CampaignComponent,
+    component: CampaignsComponent,
     canActivate: [authGuard]
   },
   {

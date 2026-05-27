@@ -1,0 +1,1 @@
+export type NotificationDetailModel = Record<string, unknown>;

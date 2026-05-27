@@ -1,22 +1,20 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, AfterViewInit, OnInit, ViewChild, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../services/auth.service';
-import { SearchService } from '../../services/search.service';
-import { CampaignComponent } from '../campaign/campaign.component';
+import { AuthService } from '../../data/services/auth.service';
+import { SearchService } from '../../data/services/search.service';
+import { CampaignsComponent } from '../campaign/campaigns.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, CampaignComponent],
+  imports: [CommonModule, CampaignsComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit {
   readonly currentTab = signal<'campaigns'>('campaigns');
   readonly showLogoutModal = signal(false);
-
-  // No recent-activities on dashboard per user request
 
   constructor(
     private authService: AuthService,
@@ -34,13 +32,16 @@ export class DashboardComponent implements OnInit {
     // recent activities removed
   }
 
+  ngAfterViewInit(): void {
+    this.currentTab.set('campaigns');
+  }
+
   selectTab(tab: 'campaigns'): void {
     this.currentTab.set(tab);
   }
 
-  goHome(campaignShell: CampaignComponent): void {
+  goHome(): void {
     this.selectTab('campaigns');
-    campaignShell.showList();
   }
 
   openLogoutModal(): void {
