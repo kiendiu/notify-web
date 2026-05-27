@@ -20,10 +20,7 @@ export class HttpApiEngine
     url: string,
     options?: Omit<ApiRequestOptions, 'body'>,
   ): Observable<T> {
-    return this.http.get<T>(
-      url,
-      options,
-    );
+    return this.http.get(url, options as any) as Observable<T>;
   }
 
   post<T>(
@@ -31,11 +28,7 @@ export class HttpApiEngine
     body: unknown,
     options?: Omit<ApiRequestOptions, 'body'>,
   ): Observable<T> {
-    return this.http.post<T>(
-      url,
-      body,
-      options,
-    );
+    return this.http.post(url, body, options as any) as Observable<T>;
   }
 
   put<T>(
@@ -43,21 +36,14 @@ export class HttpApiEngine
     body: unknown,
     options?: Omit<ApiRequestOptions, 'body'>,
   ): Observable<T> {
-    return this.http.put<T>(
-      url,
-      body,
-      options,
-    );
+    return this.http.put(url, body, options as any) as Observable<T>;
   }
 
   delete<T>(
     url: string,
     options?: Omit<ApiRequestOptions, 'body'>,
   ): Observable<T> {
-    return this.http.delete<T>(
-      url,
-      options,
-    );
+    return this.http.delete(url, options as any) as Observable<T>;
   }
 
   request<T>(
@@ -65,10 +51,6 @@ export class HttpApiEngine
     url: string,
     options?: ApiRequestOptions,
   ): Observable<T> {
-    return this.http.request<T>(
-      method,
-      url,
-      options,
-    );
+    return this.http.request(method, url, options as any) as Observable<T>;
   }
 }

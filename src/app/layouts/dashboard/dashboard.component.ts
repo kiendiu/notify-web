@@ -1,64 +1,55 @@
-import { Component, AfterViewInit, OnInit, ViewChild, signal, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, AfterViewInit, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../data/services/auth.service';
-import { SearchService } from '../../data/services/search.service';
+import { DashboardController } from './dashboard.controller';
 import { CampaignsComponent } from '../campaign/campaigns.component';
+import { SearchService } from '../../data/services/search.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, CampaignsComponent],
+  providers: [DashboardController, SearchService],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
 export class DashboardComponent implements OnInit, AfterViewInit {
-  readonly currentTab = signal<'campaigns'>('campaigns');
-  readonly showLogoutModal = signal(false);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly dashboardController = inject(DashboardController);
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
-
-  private readonly searchService = inject(SearchService);
+  readonly currentTab = this.dashboardController.currentTab;
+  readonly showLogoutModal = this.dashboardController.showLogoutModal;
+  readonly headerSearch = this.dashboardController.headerSearch;
 
   ngOnInit(): void {
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    // recent activities removed
+    this.dashboardController.init(this.destroyRef);
   }
 
   ngAfterViewInit(): void {
-    this.currentTab.set('campaigns');
+    this.dashboardController.selectTab('campaigns');
   }
 
   selectTab(tab: 'campaigns'): void {
-    this.currentTab.set(tab);
+    this.dashboardController.selectTab(tab);
   }
 
   goHome(): void {
-    this.selectTab('campaigns');
+    this.dashboardController.goHome();
   }
 
   openLogoutModal(): void {
-    this.showLogoutModal.set(true);
+    this.dashboardController.openLogoutModal();
   }
 
   closeLogoutModal(): void {
-    this.showLogoutModal.set(false);
+    this.dashboardController.closeLogoutModal();
   }
 
   logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    this.dashboardController.logout();
   }
 
   onHeaderSearch(keyword: string): void {
-    this.searchService.setSearch(keyword ?? '');
+    this.dashboardController.onHeaderSearch(keyword);
   }
 
   private formatActivityTime(timestamp: number): string {

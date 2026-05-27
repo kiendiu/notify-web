@@ -4,7 +4,7 @@ export type NotificationStatusFilter = '' | 'sent' | 'pending' | 'failed';
 
 export type NotificationChannel = 'PUSH' | 'EMAIL' | 'SMS';
 
-export type NotificationStatus = 'SENT' | 'PENDING' | 'FAILED';
+export type NotificationStatus = 'SENT' | 'PENDING' | 'FAILED' | 'DELIVERED';
 
 export interface CampaignNotificationSummary {
 	id: number;
@@ -51,6 +51,7 @@ export interface CampaignNotificationSearchResponse {
 
 export interface NotificationDeviceDetail {
 	id: number;
+	deviceId?: string;
 	address?: string;
 	target?: string;
 	deviceName: string | null;
@@ -58,6 +59,14 @@ export interface NotificationDeviceDetail {
 	retryCount: number;
 	errorMessage: string | null;
 	updatedAt: string;
+}
+
+export interface NotificationDeviceStatusUpdateEvent {
+	event: 'DEVICE_STATUS_UPDATE' | string;
+	deviceId: string;
+	status: NotificationStatus | string;
+	errorMessage?: string | null;
+	latestLogId?: number | string | null;
 }
 
 export type NotificationDetailsResponse = NotificationDeviceDetail | NotificationDeviceDetail[];
@@ -83,7 +92,7 @@ export const defaultNotificationPage: CampaignNotificationPage = {
 export function normalizeNotificationPage(
 	response: CampaignNotificationSearchResponse,
 ): CampaignNotificationPage {
-	const items = response.content ?? [];
+	const items = response.content ?? (response as { items?: CampaignNotificationSummary[] }).items ?? (response as { data?: CampaignNotificationSummary[] }).data ?? [];
 	const size = response.size ?? (items.length > 0 ? items.length : 10);
 	const totalElements = response.totalElements ?? items.length;
 	const totalPages = response.totalPages ?? (size > 0 ? Math.ceil(totalElements / size) : 0);

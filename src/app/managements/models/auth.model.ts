@@ -1,7 +1,5 @@
 export interface AuthResponse {
 	accessToken: string;
-	refreshToken: string;
-	tokenType: string;
 }
 
 export interface AuthPayload {
@@ -11,11 +9,4 @@ export interface AuthPayload {
 	deviceType: string;
 	deviceName: string;
 	osVersion: string;
-}
-
-export interface AuthState {
-	accessToken: string | null;
-	refreshToken: string | null;
-	tokenType: string | null;
-	isAuthenticated: boolean;
 }

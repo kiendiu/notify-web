@@ -1,8 +1,6 @@
-import { Component, ElementRef, OnInit, ViewChild, effect, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../data/services/auth.service';
-import { AuthPayload } from '../../managements/models/auth.model';
+import { LoginController } from './login.controller';
 import { AuthQuery } from '../../managements/queries/auth.query';
 import { AuthStateService } from '../../managements/states/login.state';
 
@@ -15,61 +13,21 @@ declare global {
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule],
+  providers: [LoginController, AuthQuery, AuthStateService],
   templateUrl: './login.html',
   styleUrl: './login.scss'
 })
 export class LoginComponent implements OnInit {
   @ViewChild('googleButtonContainer', { static: false }) googleButtonContainer!: ElementRef;
 
-  private readonly DEVICE_ID_STORAGE_KEY = 'web_device_id';
-  private readonly authState = inject(AuthStateService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly loginController = inject(LoginController);
 
-  readonly isLoading = this.authState.isLoading;
-  readonly errorMessage = this.authState.errorMessage;
-
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-    private readonly authQuery: AuthQuery
-  ) {
-    this.initializeDeviceId();
-
-    effect(() => {
-      if (this.authState.isAuthenticated()) {
-        this.router.navigate(['/dashboard']);
-      }
-    });
-  }
-
-  private initializeDeviceId(): void {
-    let deviceId = localStorage.getItem(  this.DEVICE_ID_STORAGE_KEY );
-    if (!deviceId) {
-      deviceId = 'WEB_DEVICE_' + Date.now();
-      localStorage.setItem(
-        this.DEVICE_ID_STORAGE_KEY,
-        deviceId,
-      );
-    }
-  }
-
-  private getDeviceId(): string {
-    const deviceId = localStorage.getItem( this.DEVICE_ID_STORAGE_KEY );
-    if (!deviceId) {
-      const newDeviceId = 'WEB_DEVICE_' + Date.now();
-      localStorage.setItem(
-        this.DEVICE_ID_STORAGE_KEY,
-        newDeviceId,
-      );
-      return newDeviceId;
-    }
-    return deviceId;
-  }
+  readonly isLoading = this.loginController.isLoading;
+  readonly errorMessage = this.loginController.errorMessage;
 
   ngOnInit(): void {
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
-      return;
-    }
+    this.loginController.init(this.destroyRef);
     this.initializeGoogleSignIn();
   }
 
@@ -105,14 +63,6 @@ export class LoginComponent implements OnInit {
   }
 
   private handleCredentialResponse(response: any): void {
-    const payload: AuthPayload = {
-      idToken: response.credential,
-      fcmToken: 'fcm_token_' + Date.now(),
-      deviceId: this.getDeviceId(),
-      deviceType: 'WEB',
-      deviceName: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Browser',
-      osVersion: navigator.platform
-    };
-    this.authQuery.login(payload);
+    this.loginController.handleCredentialResponse(response);
   }
 }

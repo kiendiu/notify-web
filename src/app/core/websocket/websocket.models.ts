@@ -9,6 +9,14 @@ export interface NotificationSocketEventData extends CampaignNotificationSummary
 
 export type NotificationSocketEvent = WebSocketEnvelope<NotificationSocketEventData>;
 
+export interface NotificationDeviceStatusUpdateEvent {
+  event: 'DEVICE_STATUS_UPDATE' | string;
+  deviceId: string;
+  status: string;
+  errorMessage?: string | null;
+  latestLogId?: number | string | null;
+}
+
 export interface CampaignSocketStats {
   id: string | number;
   name?: string;

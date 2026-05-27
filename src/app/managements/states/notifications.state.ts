@@ -1,4 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
+import { map } from 'rxjs';
+import { StateService } from '../../core/stores/state/state.service';
 import { CampaignNotificationFilters, CampaignNotificationPage, defaultNotificationFilters, defaultNotificationPage } from '../models/notifications.model';
 
 export interface NotificationState {
@@ -27,41 +29,61 @@ export const initialNotificationState: NotificationState = {
 	retryErrorMessage: null,
 };
 
-@Injectable({ providedIn: 'root' })
-export class NotificationsStateService {
-	readonly activeCampaignId = signal<string | null>(null);
-	readonly filters = signal<CampaignNotificationFilters>(defaultNotificationFilters);
-	readonly page = signal<CampaignNotificationPage>(defaultNotificationPage);
-	readonly loading = signal(false);
-	readonly loaded = signal(false);
-	readonly lastFetched = signal<number | null>(null);
-	readonly errorMessage = signal<string | null>(null);
-	readonly retryLoading = signal(false);
-	readonly retryingNotificationId = signal<string | number | null>(null);
-	readonly retryErrorMessage = signal<string | null>(null);
-	readonly state = computed<NotificationState>(() => ({
-		activeCampaignId: this.activeCampaignId(),
-		filters: this.filters(),
-		page: this.page(),
-		loading: this.loading(),
-		loaded: this.loaded(),
-		lastFetched: this.lastFetched(),
-		errorMessage: this.errorMessage(),
-		retryLoading: this.retryLoading(),
-		retryingNotificationId: this.retryingNotificationId(),
-		retryErrorMessage: this.retryErrorMessage(),
-	}));
+@Injectable()
+export class NotificationsStateService implements OnDestroy {
+	private readonly stateKey = 'kien-notify-web:state:notifications';
+	private readonly stateService = inject(StateService);
+	readonly state$ = this.stateService.watch<NotificationState>(this.stateKey).pipe(map((state) => state ?? createInitialNotificationState()));
+
+	constructor() {
+		if (!this.stateService.get<NotificationState>(this.stateKey)) {
+			this.stateService.set(this.stateKey, createInitialNotificationState());
+		}
+	}
+
+	getState(): NotificationState {
+		return this.stateService.get<NotificationState>(this.stateKey) ?? createInitialNotificationState();
+	}
+
+	setActiveCampaignId(activeCampaignId: string | null): void { this.patch({ activeCampaignId }); }
+	setFilters(filters: CampaignNotificationFilters): void { this.patch({ filters }); }
+	setPage(page: CampaignNotificationPage): void { this.patch({ page }); }
+	setLoading(loading: boolean): void { this.patch({ loading }); }
+	setLoaded(loaded: boolean): void { this.patch({ loaded }); }
+	setLastFetched(lastFetched: number | null): void { this.patch({ lastFetched }); }
+	setErrorMessage(errorMessage: string | null): void { this.patch({ errorMessage }); }
+	setRetryLoading(retryLoading: boolean): void { this.patch({ retryLoading }); }
+	setRetryingNotificationId(retryingNotificationId: string | number | null): void { this.patch({ retryingNotificationId }); }
+	setRetryErrorMessage(retryErrorMessage: string | null): void { this.patch({ retryErrorMessage }); }
 
 	reset(): void {
-		this.activeCampaignId.set(null);
-		this.filters.set(defaultNotificationFilters);
-		this.page.set(defaultNotificationPage);
-		this.loading.set(false);
-		this.loaded.set(false);
-		this.lastFetched.set(null);
-		this.errorMessage.set(null);
-		this.retryLoading.set(false);
-		this.retryingNotificationId.set(null);
-		this.retryErrorMessage.set(null);
+		this.stateService.set(this.stateKey, createInitialNotificationState());
 	}
+
+	ngOnDestroy(): void {
+		this.stateService.remove(this.stateKey);
+	}
+
+	private patch(partial: Partial<NotificationState>): void {
+		this.stateService.update<NotificationState>(this.stateKey, (current) => ({
+			...createInitialNotificationState(),
+			...(current ?? createInitialNotificationState()),
+			...partial,
+		}));
+	}
+}
+
+function createInitialNotificationState(): NotificationState {
+	return {
+		activeCampaignId: null,
+		filters: { ...defaultNotificationFilters },
+		page: { ...defaultNotificationPage },
+		loading: false,
+		loaded: false,
+		lastFetched: null,
+		errorMessage: null,
+		retryLoading: false,
+		retryingNotificationId: null,
+		retryErrorMessage: null,
+	};
 }

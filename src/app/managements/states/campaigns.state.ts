@@ -1,4 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
+import { map } from 'rxjs';
+import { StateService } from '../../core/stores/state/state.service';
 import { CampaignPage, CampaignSearchFilters, defaultCampaignFilters, defaultCampaignPage } from '../models/campaigns.model';
 
 export interface CampaignState {
@@ -19,35 +21,52 @@ export const initialCampaignState: CampaignState = {
 	errorMessage: null,
 };
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class CampaignsStateService {
-	readonly filters = signal<CampaignSearchFilters>(defaultCampaignFilters);
-	readonly page = signal<CampaignPage>(defaultCampaignPage);
-	readonly loading = signal(false);
-	readonly loaded = signal(false);
-	readonly lastFetched = signal<number | null>(null);
-	readonly errorMessage = signal<string | null>(null);
-	readonly state = computed<CampaignState>(() => ({
-		filters: this.filters(),
-		page: this.page(),
-		loading: this.loading(),
-		loaded: this.loaded(),
-		lastFetched: this.lastFetched(),
-		errorMessage: this.errorMessage(),
-	}));
+	private readonly stateKey = 'kien-notify-web:state:campaigns';
+	private readonly stateService = inject(StateService);
+	readonly state$ = this.stateService.watch<CampaignState>(this.stateKey).pipe(map((state) => state ?? createInitialCampaignState()));
 
-	setFilters(filters: CampaignSearchFilters): void { this.filters.set(filters); }
-	setPage(page: CampaignPage): void { this.page.set(page); }
-	setLoading(loading: boolean): void { this.loading.set(loading); }
-	setLoaded(loaded: boolean): void { this.loaded.set(loaded); }
-	setLastFetched(lastFetched: number | null): void { this.lastFetched.set(lastFetched); }
-	setErrorMessage(errorMessage: string | null): void { this.errorMessage.set(errorMessage); }
-	reset(): void {
-		this.filters.set(defaultCampaignFilters);
-		this.page.set(defaultCampaignPage);
-		this.loading.set(false);
-		this.loaded.set(false);
-		this.lastFetched.set(null);
-		this.errorMessage.set(null);
+	constructor() {
+		if (!this.stateService.get<CampaignState>(this.stateKey)) {
+			this.stateService.set(this.stateKey, createInitialCampaignState());
+		}
 	}
+
+	getState(): CampaignState {
+		return this.stateService.get<CampaignState>(this.stateKey) ?? createInitialCampaignState();
+	}
+
+	setFilters(filters: CampaignSearchFilters): void { this.patch({ filters }); }
+	setPage(page: CampaignPage): void { this.patch({ page }); }
+	setLoading(loading: boolean): void { this.patch({ loading }); }
+	setLoaded(loaded: boolean): void { this.patch({ loaded }); }
+	setLastFetched(lastFetched: number | null): void { this.patch({ lastFetched }); }
+	setErrorMessage(errorMessage: string | null): void { this.patch({ errorMessage }); }
+	reset(): void {
+		this.stateService.set(this.stateKey, createInitialCampaignState());
+	}
+
+	ngOnDestroy(): void {
+		this.stateService.remove(this.stateKey);
+	}
+
+	private patch(partial: Partial<CampaignState>): void {
+		this.stateService.update<CampaignState>(this.stateKey, (current) => ({
+			...createInitialCampaignState(),
+			...(current ?? createInitialCampaignState()),
+			...partial,
+		}));
+	}
+}
+
+function createInitialCampaignState(): CampaignState {
+	return {
+		filters: { ...defaultCampaignFilters },
+		page: { ...defaultCampaignPage },
+		loading: false,
+		loaded: false,
+		lastFetched: null,
+		errorMessage: null,
+	};
 }

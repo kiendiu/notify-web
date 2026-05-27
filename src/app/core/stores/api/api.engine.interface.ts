@@ -3,6 +3,8 @@ import { HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface ApiRequestOptions {
+  withCredentials?: boolean;
+  responseType?: 'json' | 'text' | 'blob' | 'arraybuffer';
   headers?: HttpHeaders | Record<string, string | string[]>;
   params?: HttpParams | Record<
     string,

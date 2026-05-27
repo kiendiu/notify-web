@@ -1,6 +1,6 @@
 <section class="campaign-page">
   <div class="page-header">
-    <button type="button" class="back-btn" (click)="onBack()?.()">
+    <button type="button" class="back-btn" (click)="handleBack()">
       <i class="fas fa-arrow-left"></i>
     </button>
     <div class="header-content">
@@ -162,9 +162,21 @@
       </div>
 
       <div class="form-footer">
-        <button class="btn-submit" type="button" [disabled]="formService.isSubmitting() || !formService.canSubmit()" (click)="formService.createCampaign()">
-          @if (formService.isSubmitting()) { Đang tạo... } @else { Tạo chiến dịch }
+        <button 
+          class="btn-submit" 
+          type="button" 
+          [disabled]="formService.isSubmitting() || !formService.canSubmit()" 
+          (click)="onSubmitCampaign()">
+          
+          @if (formService.isSubmitting()) { 
+            Đang tạo... 
+          } @else { 
+            Tạo chiến dịch 
+          }
         </button>
+        <!-- <button class="btn-submit" type="button" [disabled]="formService.isSubmitting() || !formService.canSubmit()" (click)="formService.createCampaign()">
+          @if (formService.isSubmitting()) { Đang tạo... } @else { Tạo chiến dịch }
+        </button> -->
       </div>
 
       @if (formService.submitError()) {

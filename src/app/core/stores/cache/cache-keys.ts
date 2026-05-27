@@ -15,7 +15,7 @@ export function buildPreviewUsersParams(keyword: string, page: number, size: num
 
 export function buildCampaignsParams(filters: CampaignSearchFilters) {
   return {
-    campaignName: filters.campaignName.trim(),
+    keyword: filters.campaignName.trim(),
     page: filters.page,
     size: filters.size,
     sortDirection: filters.sortDirection,

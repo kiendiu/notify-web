@@ -1,4 +1,19 @@
-import { Injectable, computed, signal } from '@angular/core';
+import {
+	Injectable,
+	OnDestroy,
+	inject,
+} from '@angular/core';
+
+import { map } from 'rxjs';
+
+import {
+	CampaignChannel,
+	CampaignCreateRequest,
+	CampaignCreateResponse,
+	CampaignTargetType,
+} from '../models/campaigns.model';
+
+import { StateService } from '../../core/stores/state/state.service';
 
 export interface TemplateDto {
 	templateName: string;
@@ -39,141 +54,512 @@ export interface UsersSearchResponse {
 	first: boolean;
 }
 
-export interface CampaignEditorState {
+export interface CampaignEditorStateModel {
 	templates: TemplateDto[];
-	templatePreview: TemplatePreviewDto | null;
-	pushPreview: PushPreview | null;
-	emailPreview: EmailPreview | null;
 	users: UserDto[];
-	userSearchLoading: boolean;
-	templatesLoading: boolean;
-	templatePreviewLoading: boolean;
-	templatesLoaded: boolean;
-	templatesLastFetched: number | null;
-	usersLoaded: boolean;
-	usersLastFetched: number | null;
-	templatePreviewLoaded: boolean;
-	templatePreviewLastFetched: number | null;
-	errorMessage: string | null;
+	campaignName: string;
+	targetType: CampaignTargetType;
+	selectedChannels: CampaignChannel[];
+	ratePerHour: number;
+	selectedTemplate: string;
+	pushTitle: string;
+	pushBody: string;
+	pushActionUrl: string;
+	scheduledTime: string;
+	endTime: string;
+	selectedUserIds: number[];
+	recipientSearchDraft: string;
 	isSubmitting: boolean;
 	submitError: string;
+	submitSuccess: CampaignCreateResponse | null;
 	showTemplateModal: boolean;
 	templateSearch: string;
 	showUserModal: boolean;
 	userSearch: string;
+
+	templatePreview:
+		| TemplatePreviewDto
+		| null;
+
+	pushPreview:
+		| PushPreview
+		| null;
+
+	emailPreview:
+		| EmailPreview
+		| null;
+
+	templatesLoading: boolean;
+	userSearchLoading: boolean;
+
+	templatesLoaded: boolean;
+	usersLoaded: boolean;
+
+	templatesLastFetched:
+		| number
+		| null;
+
+	usersLastFetched:
+		| number
+		| null;
+
+	errorMessage:
+		| string
+		| null;
 }
 
-export const initialCampaignEditorState: CampaignEditorState = {
-	templates: [],
-	templatePreview: null,
-	pushPreview: null,
-	emailPreview: null,
-	users: [],
-	userSearchLoading: false,
-	templatesLoading: false,
-	templatePreviewLoading: false,
-	templatesLoaded: false,
-	templatesLastFetched: null,
-	usersLoaded: false,
-	usersLastFetched: null,
-	templatePreviewLoaded: false,
-	templatePreviewLastFetched: null,
-	errorMessage: null,
-	isSubmitting: false,
-	submitError: '',
-	showTemplateModal: false,
-	templateSearch: '',
-	showUserModal: false,
-	userSearch: '',
-};
+export const initialCampaignEditorState: CampaignEditorStateModel =
+	{
+		templates: [],
+		users: [],
+		campaignName: '',
+		targetType: 'ALL',
+		selectedChannels: ['PUSH'],
+		ratePerHour: 10000,
+		selectedTemplate: '',
+		pushTitle: '',
+		pushBody: '',
+		pushActionUrl: '',
+		scheduledTime: '',
+		endTime: '',
+		selectedUserIds: [],
+		recipientSearchDraft: '',
+		isSubmitting: false,
+		submitError: '',
+		submitSuccess: null,
+		showTemplateModal: false,
+		templateSearch: '',
+		showUserModal: false,
+		userSearch: '',
 
-@Injectable({ providedIn: 'root' })
-export class CampaignEditorStateService {
-	readonly templates = signal<TemplateDto[]>([]);
-	readonly templatePreview = signal<TemplatePreviewDto | null>(null);
-	readonly pushPreview = signal<PushPreview | null>(null);
-	readonly emailPreview = signal<EmailPreview | null>(null);
-	readonly users = signal<UserDto[]>([]);
-	readonly userSearchLoading = signal(false);
-	readonly templatesLoading = signal(false);
-	readonly templatePreviewLoading = signal(false);
-	readonly templatesLoaded = signal(false);
-	readonly templatesLastFetched = signal<number | null>(null);
-	readonly usersLoaded = signal(false);
-	readonly usersLastFetched = signal<number | null>(null);
-	readonly templatePreviewLoaded = signal(false);
-	readonly templatePreviewLastFetched = signal<number | null>(null);
-	readonly errorMessage = signal<string | null>(null);
-	readonly isSubmitting = signal(false);
-	readonly submitError = signal('');
-	readonly showTemplateModal = signal(false);
-	readonly templateSearch = signal('');
-	readonly showUserModal = signal(false);
-	readonly userSearch = signal('');
-	readonly state = computed<CampaignEditorState>(() => ({
-		templates: this.templates(),
-		templatePreview: this.templatePreview(),
-		pushPreview: this.pushPreview(),
-		emailPreview: this.emailPreview(),
-		users: this.users(),
-		userSearchLoading: this.userSearchLoading(),
-		templatesLoading: this.templatesLoading(),
-		templatePreviewLoading: this.templatePreviewLoading(),
-		templatesLoaded: this.templatesLoaded(),
-		templatesLastFetched: this.templatesLastFetched(),
-		usersLoaded: this.usersLoaded(),
-		usersLastFetched: this.usersLastFetched(),
-		templatePreviewLoaded: this.templatePreviewLoaded(),
-		templatePreviewLastFetched: this.templatePreviewLastFetched(),
-		errorMessage: this.errorMessage(),
-		isSubmitting: this.isSubmitting(),
-		submitError: this.submitError(),
-		showTemplateModal: this.showTemplateModal(),
-		templateSearch: this.templateSearch(),
-		showUserModal: this.showUserModal(),
-		userSearch: this.userSearch(),
-	}));
+		templatePreview: null,
+		pushPreview: null,
+		emailPreview: null,
 
-	setTemplates(templates: TemplateDto[]): void { this.templates.set(templates); }
-	setUsers(users: UserDto[]): void { this.users.set(users); }
-	setPushPreview(pushPreview: PushPreview | null): void { this.pushPreview.set(pushPreview); }
-	setEmailPreview(emailPreview: EmailPreview | null): void { this.emailPreview.set(emailPreview); }
-	setTemplatePreview(templatePreview: TemplatePreviewDto | null): void { this.templatePreview.set(templatePreview); }
-	setTemplatesLoading(isLoading: boolean): void { this.templatesLoading.set(isLoading); }
-	setUserSearchLoading(isLoading: boolean): void { this.userSearchLoading.set(isLoading); }
-	setTemplatesLoaded(isLoaded: boolean): void { this.templatesLoaded.set(isLoaded); }
-	setTemplatesLastFetched(timestamp: number | null): void { this.templatesLastFetched.set(timestamp); }
-	setUsersLoaded(isLoaded: boolean): void { this.usersLoaded.set(isLoaded); }
-	setUsersLastFetched(timestamp: number | null): void { this.usersLastFetched.set(timestamp); }
-	setTemplatePreviewLoaded(isLoaded: boolean): void { this.templatePreviewLoaded.set(isLoaded); }
-	setTemplatePreviewLastFetched(timestamp: number | null): void { this.templatePreviewLastFetched.set(timestamp); }
-	setErrorMessage(message: string | null): void { this.errorMessage.set(message); }
-	resetPreviews(): void {
-		this.templatePreview.set(null);
-		this.pushPreview.set(null);
-		this.emailPreview.set(null);
+		templatesLoading: false,
+		userSearchLoading: false,
+
+		templatesLoaded: false,
+		usersLoaded: false,
+
+		templatesLastFetched: null,
+		usersLastFetched: null,
+
+		errorMessage: null,
+	};
+
+@Injectable()
+export class CampaignEditorState
+	implements OnDestroy
+{
+	private readonly stateKey =
+		'kien-notify-web:state:campaign-editor';
+
+	private readonly stateService =
+		inject(StateService);
+
+	readonly state$ =
+		this.stateService
+			.watch<CampaignEditorStateModel>(
+				this.stateKey,
+			)
+			.pipe(
+				map(
+					(state) =>
+						state ??
+						initialCampaignEditorState,
+				),
+			);
+
+	constructor() {
+		const current =
+			this.stateService.get<CampaignEditorStateModel>(
+				this.stateKey,
+			);
+
+		if (!current) {
+			this.stateService.set(
+				this.stateKey,
+				initialCampaignEditorState,
+			);
+		}
 	}
+
+	campaignName(): string {
+		return this.getState().campaignName;
+	}
+
+	targetType(): CampaignTargetType {
+		return this.getState().targetType;
+	}
+
+	selectedChannels(): CampaignChannel[] {
+		return this.getState().selectedChannels;
+	}
+
+	ratePerHour(): number {
+		return this.getState().ratePerHour;
+	}
+
+	selectedTemplate(): string {
+		return this.getState().selectedTemplate;
+	}
+
+	pushTitle(): string {
+		return this.getState().pushTitle;
+	}
+
+	pushBody(): string {
+		return this.getState().pushBody;
+	}
+
+	pushActionUrl(): string {
+		return this.getState().pushActionUrl;
+	}
+
+	scheduledTime(): string {
+		return this.getState().scheduledTime;
+	}
+
+	endTime(): string {
+		return this.getState().endTime;
+	}
+
+	selectedUserIds(): number[] {
+		return this.getState().selectedUserIds;
+	}
+
+	recipientSearchDraft(): string {
+		return this.getState().recipientSearchDraft;
+	}
+
+	isSubmitting(): boolean {
+		return this.getState().isSubmitting;
+	}
+
+	submitError(): string {
+		return this.getState().submitError;
+	}
+
+	submitSuccess(): CampaignCreateResponse | null {
+		return this.getState().submitSuccess;
+	}
+
+	showTemplateModal(): boolean {
+		return this.getState().showTemplateModal;
+	}
+
+	templateSearch(): string {
+		return this.getState().templateSearch;
+	}
+
+	showUserModal(): boolean {
+		return this.getState().showUserModal;
+	}
+
+	userSearch(): string {
+		return this.getState().userSearch;
+	}
+
+	isSpecificTarget(): boolean {
+		return this.targetType() === 'SPECIFIC';
+	}
+
+	templates(): TemplateDto[] {
+		return this.getState().templates;
+	}
+
+	users(): UserDto[] {
+		return this.getState().users;
+	}
+
+	pushPreview(): PushPreview | null {
+		return this.getState().pushPreview;
+	}
+
+	emailPreview(): EmailPreview | null {
+		return this.getState().emailPreview;
+	}
+
+	canSubmit(): boolean {
+		if (!this.campaignName().trim()) {
+			return false;
+		}
+		if (this.selectedChannels().length === 0) {
+			return false;
+		}
+		if (!this.scheduledTime()) {
+			return false;
+		}
+
+		if (this.isSpecificTarget() && this.selectedUserIds().length === 0) {
+			return false;
+		}
+
+		if (
+			!this.selectedTemplate().trim() &&
+			(!this.pushTitle().trim() || !this.pushBody().trim())
+		) {
+			return false;
+		}
+
+		return true;
+	}
+
+	getState(): CampaignEditorStateModel {
+		return (
+			this.stateService.get<CampaignEditorStateModel>(
+				this.stateKey,
+			) ??
+			initialCampaignEditorState
+		);
+	}
+
+	setCampaignName(campaignName: string): void {
+		this.patch({ campaignName });
+	}
+
+	setTargetType(targetType: CampaignTargetType): void {
+		this.patch({ targetType });
+	}
+
+	setSelectedChannels(selectedChannels: CampaignChannel[]): void {
+		this.patch({ selectedChannels });
+	}
+
+	setRatePerHour(ratePerHour: number): void {
+		this.patch({ ratePerHour });
+	}
+
+	setSelectedTemplate(selectedTemplate: string): void {
+		this.patch({ selectedTemplate });
+	}
+
+	setPushTitle(pushTitle: string): void {
+		this.patch({ pushTitle });
+	}
+
+	setPushBody(pushBody: string): void {
+		this.patch({ pushBody });
+	}
+
+	setPushActionUrl(pushActionUrl: string): void {
+		this.patch({ pushActionUrl });
+	}
+
+	setScheduledTime(scheduledTime: string): void {
+		this.patch({ scheduledTime });
+	}
+
+	setEndTime(endTime: string): void {
+		this.patch({ endTime });
+	}
+
+	setSelectedUserIds(selectedUserIds: number[]): void {
+		this.patch({ selectedUserIds });
+	}
+
+	setRecipientSearchDraft(recipientSearchDraft: string): void {
+		this.patch({ recipientSearchDraft });
+	}
+
+	setIsSubmitting(isSubmitting: boolean): void {
+		this.patch({ isSubmitting });
+	}
+
+	setSubmitError(submitError: string): void {
+		this.patch({ submitError });
+	}
+
+	setSubmitSuccess(submitSuccess: CampaignCreateResponse | null): void {
+		this.patch({ submitSuccess });
+	}
+
+	setShowTemplateModal(showTemplateModal: boolean): void {
+		this.patch({ showTemplateModal });
+	}
+
+	setTemplateSearch(templateSearch: string): void {
+		this.patch({ templateSearch });
+	}
+
+	setShowUserModal(showUserModal: boolean): void {
+		this.patch({ showUserModal });
+	}
+
+	setUserSearch(userSearch: string): void {
+		this.patch({ userSearch });
+	}
+
+	patch(
+		partial: Partial<CampaignEditorStateModel>,
+	): void {
+		this.stateService.update<CampaignEditorStateModel>(
+			this.stateKey,
+			(current) => ({
+				...initialCampaignEditorState,
+				...(current ??
+					initialCampaignEditorState),
+				...partial,
+			}),
+		);
+	}
+
 	clear(): void {
-		this.templates.set([]);
-		this.templatePreview.set(null);
-		this.pushPreview.set(null);
-		this.emailPreview.set(null);
-		this.users.set([]);
-		this.userSearchLoading.set(false);
-		this.templatesLoading.set(false);
-		this.templatePreviewLoading.set(false);
-		this.templatesLoaded.set(false);
-		this.templatesLastFetched.set(null);
-		this.usersLoaded.set(false);
-		this.usersLastFetched.set(null);
-		this.templatePreviewLoaded.set(false);
-		this.templatePreviewLastFetched.set(null);
-		this.errorMessage.set(null);
-		this.isSubmitting.set(false);
-		this.submitError.set('');
-		this.showTemplateModal.set(false);
-		this.templateSearch.set('');
-		this.showUserModal.set(false);
-		this.userSearch.set('');
+		this.stateService.set(
+			this.stateKey,
+			initialCampaignEditorState,
+		);
+	}
+
+	clearPreview(): void {
+		this.patch({
+			templatePreview: null,
+			pushPreview: null,
+			emailPreview: null,
+		});
+	}
+
+	toggleChannel(channel: CampaignChannel): void {
+		const current = this.selectedChannels();
+		if (current.includes(channel)) {
+			if (current.length === 1) {
+				return;
+			}
+			this.setSelectedChannels(current.filter((item) => item !== channel));
+			return;
+		}
+		this.setSelectedChannels([...current, channel]);
+	}
+
+	openTemplateModal(): void {
+		this.setTemplateSearch('');
+		this.setShowTemplateModal(true);
+	}
+
+	closeTemplateModal(): void {
+		this.setShowTemplateModal(false);
+	}
+
+	selectTemplateFromModal(templateName: string): void {
+		this.onTemplateChange(templateName);
+		this.setShowTemplateModal(false);
+	}
+
+	clearTemplate(): void {
+		this.onTemplateChange('');
+	}
+
+	onTemplateChange(templateName: string): void {
+		this.setSelectedTemplate(templateName);
+
+		const found = this.templates().find(
+			(template) => template.templateName === templateName,
+		);
+
+		if (!found) {
+			this.setPushTitle('');
+			this.setPushBody('');
+			this.updatePreview();
+			return;
+		}
+
+		this.setPushTitle(found.subject ?? '');
+		this.setPushBody(found.content ?? '');
+		this.updatePreview();
+	}
+
+	onPushTitleChange(value: string): void {
+		this.setPushTitle(value);
+		this.updatePreview();
+	}
+
+	onPushBodyChange(value: string): void {
+		this.setPushBody(value);
+		this.updatePreview();
+	}
+
+	openUserModal(): void {
+		this.setUserSearch('');
+		this.setShowUserModal(true);
+	}
+
+	closeUserModal(): void {
+		this.setShowUserModal(false);
+	}
+
+	toggleUserSelection(userId: number): void {
+		const current = this.selectedUserIds();
+		if (current.includes(userId)) {
+			this.setSelectedUserIds(current.filter((item) => item !== userId));
+			return;
+		}
+		this.setSelectedUserIds([...current, userId]);
+	}
+
+	clearUserSelection(): void {
+		this.setSelectedUserIds([]);
+	}
+
+	isUserSelected(userId: number): boolean {
+		return this.selectedUserIds().includes(userId);
+	}
+
+	buildCreateRequest(): CampaignCreateRequest {
+		return {
+			name: this.campaignName().trim(),
+			targetType: this.targetType(),
+			targetUserIds: this.selectedUserIds(),
+			channel: this.selectedChannels(),
+			ratePerHour: this.ratePerHour(),
+			templateName: this.selectedTemplate().trim() || null,
+			pushTitle: this.pushTitle().trim() || null,
+			pushBody: this.pushBody().trim() || null,
+			pushActionUrl: this.pushActionUrl().trim() || null,
+			scheduledTime: this.scheduledTime(),
+			endTime: this.endTime() || null,
+		};
+	}
+
+	resetFormState(): void {
+		this.patch({
+			campaignName: '',
+			targetType: 'ALL',
+			selectedChannels: ['PUSH'],
+			ratePerHour: 10000,
+			selectedTemplate: '',
+			pushTitle: '',
+			pushBody: '',
+			pushActionUrl: '',
+			scheduledTime: '',
+			endTime: '',
+			selectedUserIds: [],
+			recipientSearchDraft: '',
+			isSubmitting: false,
+			submitError: '',
+			submitSuccess: null,
+			showTemplateModal: false,
+			templateSearch: '',
+			showUserModal: false,
+			userSearch: '',
+		});
+		this.clearPreview();
+	}
+
+	private updatePreview(): void {
+		const pushTitle = this.pushTitle().trim();
+		const pushBody = this.pushBody().trim();
+
+		this.patch({
+			pushPreview: pushTitle || pushBody
+				? { title: pushTitle, body: pushBody }
+				: null,
+		});
+	}
+
+	ngOnDestroy(): void {
+		this.stateService.remove(
+			this.stateKey,
+		);
 	}
 }

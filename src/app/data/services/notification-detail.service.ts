@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { ApiConstant } from '../../core/constants/api.constant';
 import { NotificationDetailsResponse } from '../../managements/models/notifications.model';
 import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
@@ -34,5 +34,17 @@ export class NotificationDetailService {
           error: (err) => observer.error(err),
         });
     });
+  }
+
+  retryNotificationDevice(logId: string | number): Observable<void> {
+    return this.apiEngine.post<string>(
+      ApiConstant.CAMPAIGNS.DELIVERY_LOG_RETRY(logId),
+      {},
+      { responseType: 'text' },
+    ).pipe(map(() => void 0));
+  }
+
+  invalidateNotificationDetails(notificationId: string | number): void {
+    this.cacheEngine.remove(buildNotificationDetailCacheKey(notificationId));
   }
 }

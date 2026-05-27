@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { NotificationDetailService } from '../../data/services/notification-detail.service';
 import { NotificationDetailsResponse } from '../models/notifications.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class NotificationDetailQuery {
 	private readonly notificationDetailService = inject(NotificationDetailService);
 

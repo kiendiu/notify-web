@@ -1,84 +1,120 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { ApiConstant } from '../../core/constants/api.constant';
-import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
-import { CACHE_ENGINE } from '../../core/stores/cache/cache.engine';
-import { CampaignService } from '../../data/services/campaigns.service';
-import { CampaignCreateRequest, CampaignCreateResponse } from '../models/campaigns.model';
-import { CampaignEditorStateService, TemplateDto, UsersSearchResponse } from '../states/campaign-editor.state';
-import { buildPreviewTemplatesCacheKey, buildPreviewUsersCacheKey, CAMPAIGN_EDITOR_TTL_MS } from '../../data/caches/campaign-editor.cache';
+import { Observable, of, tap } from 'rxjs';
 
-@Injectable({ providedIn: 'root' })
+import { CampaignEditorCache } from '../../data/caches/campaign-editor.cache';
+import { CampaignEditorService } from '../../data/services/campaign-editor.service';
+import {
+    CampaignCreateRequest,
+    CampaignCreateResponse,
+} from '../models/campaigns.model';
+
+import {
+    CampaignEditorState,
+    TemplateDto,
+    UsersSearchResponse,
+} from '../states/campaign-editor.state';
+
+@Injectable()
 export class CampaignEditorQuery {
-	private readonly campaignService = inject(CampaignService);
-	private readonly apiEngine = inject(API_ENGINE);
-	private readonly cacheEngine = inject(CACHE_ENGINE);
-	private readonly campaignEditorState = inject(CampaignEditorStateService);
+    private readonly campaignEditorCache = inject(CampaignEditorCache);
+    private readonly campaignEditorApiService = inject(CampaignEditorService);
+    private readonly campaignEditorState = inject(CampaignEditorState);
 
-	loadTemplates(): Observable<TemplateDto[]> {
-		const cacheKey = buildPreviewTemplatesCacheKey();
-		const cachedEntry = this.cacheEngine.get<TemplateDto[]>(cacheKey);
+    loadTemplates(): Observable<TemplateDto[]> {
+        const cachedTemplates = this.campaignEditorCache.getTemplates();
 
-		if (this.cacheEngine.isFresh(cachedEntry, CAMPAIGN_EDITOR_TTL_MS)) {
-			const templates = cachedEntry!.value;
-			this.campaignEditorState.setTemplates(templates);
-			this.campaignEditorState.setTemplatesLoaded(true);
-			this.campaignEditorState.setTemplatesLastFetched(cachedEntry!.fetchedAt ?? Date.now());
-			return of(templates);
-		}
+        if (cachedTemplates !== null) {
+            this.campaignEditorState.patch({
+                templates: cachedTemplates,
+                templatesLoaded: true,
+                templatesLoading: false,
+                templatesLastFetched: Date.now(),
+            });
+            return of(cachedTemplates);
+        }
 
-		this.campaignEditorState.setTemplatesLoading(true);
-		this.campaignEditorState.setErrorMessage(null);
+        this.campaignEditorState.patch({
+            templatesLoading: true,
+            errorMessage: null,
+        });
 
-		return this.apiEngine.get<TemplateDto[]>(ApiConstant.CAMPAIGNS.TEMPLATES_ALL).pipe(
-			tap((templates) => {
-				this.cacheEngine.set(cacheKey, templates);
-				this.campaignEditorState.setTemplates(templates);
-				this.campaignEditorState.setTemplatesLoaded(true);
-				this.campaignEditorState.setTemplatesLastFetched(Date.now());
-				this.campaignEditorState.setTemplatesLoading(false);
-			}),
-		);
-	}
+        // Gọi API từ Service và tiến hành update state qua pipe tap
+        return this.campaignEditorApiService
+            .getTemplates()
+            .pipe(
+                tap((templates) => {
+                    this.campaignEditorCache.setTemplates(templates);
 
-	searchUsers(keyword: string, page: number, size: number): Observable<UsersSearchResponse> {
-		const cacheKey = buildPreviewUsersCacheKey(keyword ?? '', page, size);
-		const cachedEntry = this.cacheEngine.get<UsersSearchResponse>(cacheKey);
+                    this.campaignEditorState.patch({
+                        templates,
+                        templatesLoaded: true,
+                        templatesLoading: false,
+                        templatesLastFetched: Date.now(),
+                    });
+                }),
+            );
+    }
 
-		if (this.cacheEngine.isFresh(cachedEntry, CAMPAIGN_EDITOR_TTL_MS)) {
-			const response = cachedEntry!.value;
-			this.campaignEditorState.setUsers(response.content ?? []);
-			this.campaignEditorState.setUsersLoaded(true);
-			this.campaignEditorState.setUsersLastFetched(cachedEntry!.fetchedAt ?? Date.now());
-			return of(response);
-		}
+    searchUsers(
+        keyword: string,
+        page: number,
+        size: number,
+    ): Observable<UsersSearchResponse> {
+        const cachedResponse = this.campaignEditorCache.getUsers(
+            keyword,
+            page,
+            size,
+        );
 
-		this.campaignEditorState.setUserSearchLoading(true);
-		this.campaignEditorState.setErrorMessage(null);
+        if (cachedResponse !== null) {
+            this.campaignEditorState.patch({
+                users: cachedResponse.content ?? [],
+                usersLoaded: true,
+                userSearchLoading: false,
+                usersLastFetched: Date.now(),
+            });
+            return of(cachedResponse);
+        }
 
-		return this.apiEngine.get<UsersSearchResponse>(ApiConstant.CAMPAIGNS.USERS_SEARCH, {
-			params: {
-				page,
-				size,
-				...(keyword?.trim() && { keyword: keyword.trim() }),
-			},
-		}).pipe(
-			tap((response) => {
-				this.cacheEngine.set(cacheKey, response);
-				this.campaignEditorState.setUsers(response.content ?? []);
-				this.campaignEditorState.setUsersLoaded(true);
-				this.campaignEditorState.setUsersLastFetched(Date.now());
-				this.campaignEditorState.setUserSearchLoading(false);
-			}),
-		);
-	}
+        this.campaignEditorState.patch({
+            userSearchLoading: true,
+            errorMessage: null,
+        });
 
-	clearPreview(): void {
-		this.campaignEditorState.resetPreviews();
-	}
+        // Gọi API từ Service và tiến hành update state qua pipe tap
+        return this.campaignEditorApiService
+            .searchUsers(keyword, page, size)
+            .pipe(
+                tap((response) => {
+                    this.campaignEditorCache.setUsers(
+                        keyword,
+                        page,
+                        size,
+                        response,
+                    );
 
-	createCampaign(request: CampaignCreateRequest): Observable<CampaignCreateResponse> {
-		return this.campaignService.createCampaign(request);
-	}
+                    this.campaignEditorState.patch({
+                        users: response.content ?? [],
+                        usersLoaded: true,
+                        userSearchLoading: false,
+                        usersLastFetched: Date.now(),
+                    });
+                }),
+            );
+    }
+
+    clearPreview(): void {
+        this.campaignEditorState.patch({
+            templatePreview: null,
+            pushPreview: null,
+            emailPreview: null,
+        });
+    }
+
+    createCampaign(
+        request: CampaignCreateRequest,
+    ): Observable<CampaignCreateResponse> {
+        // Nhận request và trả về Observable cho Component hoặc nơi cần subscribe xử lý tiếp
+        return this.campaignEditorApiService.createCampaign(request);
+    }
 }

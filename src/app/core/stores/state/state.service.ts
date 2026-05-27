@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs';
 import { StateEngine } from './state.engine';
 import { EngineState, setKeyState, removeKeyState, clearByPrefixState } from './state.reducer';
 
@@ -33,5 +34,9 @@ export class StateService implements StateEngine {
 
   clearByPrefix(prefix: string): void {
     this.store.dispatch(clearByPrefixState({ prefix }));
+  }
+
+  watch<T>(key: string): Observable<T | null> {
+    return this.store.select((state) => (state.engineState?.cacheMap[key] as T | null) ?? null);
   }
 }

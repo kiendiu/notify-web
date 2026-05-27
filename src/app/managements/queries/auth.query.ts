@@ -4,7 +4,7 @@ import { AuthService } from '../../data/services/auth.service';
 import { AuthPayload } from '../models/auth.model';
 import { AuthStateService } from '../states/login.state';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class AuthQuery {
 	private readonly authService = inject(AuthService);
 	private readonly authState = inject(AuthStateService);

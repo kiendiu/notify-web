@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { Observable, Subscription, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { NotificationWsService } from '../../core/websocket/notification-ws.service';
@@ -6,10 +6,13 @@ import { CampaignService } from '../../data/services/campaigns.service';
 import { CampaignCreateRequest, CampaignCreateResponse, CampaignSearchFilters, normalizeCampaignPage } from '../models/campaigns.model';
 import { CampaignsStateService } from '../states/campaigns.state';
 import { CampaignEditorQuery } from './campaign-editor.query';
+import { CACHE_ENGINE } from '../../core/stores/cache/cache.engine';
+import { buildCampaignsCacheKey, CAMPAIGNS_TTL_MS } from '../../data/caches/campaigns.cache';
 
-@Injectable({ providedIn: 'root' })
-export class CampaignsQuery {
+@Injectable()
+export class CampaignsQuery implements OnDestroy {
 	private readonly campaignService = inject(CampaignService);
+    private readonly cacheEngine = inject(CACHE_ENGINE);
 	private readonly campaignsState = inject(CampaignsStateService);
 	private readonly campaignEditorQuery = inject(CampaignEditorQuery);
 	private readonly websocket = inject(NotificationWsService);
@@ -26,23 +29,23 @@ export class CampaignsQuery {
 	}
 
 	setCampaignName(campaignName: string): void {
-		this.campaignsState.filters.update((current) => ({ ...current, campaignName, page: 0 }));
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, campaignName, page: 0 });
 	}
 
 	setCampaignPage(page: number): void {
-		this.campaignsState.filters.update((current) => ({ ...current, page }));
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page });
 	}
 
 	setCampaignStatus(status: string): void {
-		this.campaignsState.filters.update((current) => ({ ...current, status: status as CampaignSearchFilters['status'], page: 0 }));
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, status: status as CampaignSearchFilters['status'], page: 0 });
 	}
 
 	setCampaignSortDirection(sortDirection: string): void {
-		this.campaignsState.filters.update((current) => ({ ...current, sortDirection: sortDirection as CampaignSearchFilters['sortDirection'], page: 0 }));
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, sortDirection: sortDirection as CampaignSearchFilters['sortDirection'], page: 0 });
 	}
 
 	setCampaignSize(size: number): void {
-		this.campaignsState.filters.update((current) => ({ ...current, size, page: 0 }));
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, size, page: 0 });
 	}
 
 	loadTemplates(): void {
@@ -62,12 +65,24 @@ export class CampaignsQuery {
 	}
 
 	loadCampaigns(): void {
-		const filters = this.campaignsState.filters();
+		const filters = this.campaignsState.getState().filters;
 		this.campaignsState.setLoading(true);
 		this.campaignsState.setErrorMessage(null);
 
+		const cacheKey = buildCampaignsCacheKey(filters);
+		const cached = this.cacheEngine.get<any>(cacheKey);
+		if (this.cacheEngine.isFresh(cached, CAMPAIGNS_TTL_MS)) {
+			const page = normalizeCampaignPage(cached!.value);
+			this.campaignsState.setPage(page);
+			this.campaignsState.setLoaded(true);
+			this.campaignsState.setLastFetched(cached!.fetchedAt ?? Date.now());
+			this.campaignsState.setLoading(false);
+			return;
+		}
+
 		this.campaignService.searchCampaigns(filters).pipe(
 			tap((response) => {
+				this.cacheEngine.set(cacheKey, response);
 				const page = normalizeCampaignPage(response);
 				this.campaignsState.setPage(page);
 				this.campaignsState.setLoaded(true);
@@ -89,5 +104,10 @@ export class CampaignsQuery {
 				this.campaignsState.setLoaded(false);
 			}),
 		);
+	}
+
+	ngOnDestroy(): void {
+		this.realtimeSubscription?.unsubscribe();
+		this.realtimeSubscription = null;
 	}
 }

@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { NotificationWsService } from '../../core/websocket/notification-ws.service';
@@ -6,8 +6,8 @@ import { NotificationService } from '../../data/services/notifications.service';
 import { CampaignNotificationFilters, CampaignNotificationSummary, normalizeNotificationPage } from '../models/notifications.model';
 import { NotificationsStateService } from '../states/notifications.state';
 
-@Injectable({ providedIn: 'root' })
-export class NotificationsQuery {
+@Injectable()
+export class NotificationsQuery implements OnDestroy {
 	private readonly notificationService = inject(NotificationService);
 	private readonly websocket = inject(NotificationWsService);
 	private readonly notificationsState = inject(NotificationsStateService);
@@ -28,68 +28,90 @@ export class NotificationsQuery {
 	}
 
 	setActiveNotificationCampaign(campaignId: string): void {
-		this.notificationsState.activeCampaignId.set(campaignId);
-		this.notificationsState.filters.update((current) => ({ ...current, page: 0 }));
+		this.notificationsState.setActiveCampaignId(campaignId);
+		this.notificationsState.setFilters({ ...this.notificationsState.getState().filters, page: 0 });
 	}
 
 	setNotificationFilters(filters: Partial<CampaignNotificationFilters>): void {
-		this.notificationsState.filters.update((current) => ({ ...current, ...filters }));
+		this.notificationsState.setFilters({ ...this.notificationsState.getState().filters, ...filters });
 	}
 
 	setNotificationPage(page: number): void {
-		this.notificationsState.filters.update((current) => ({ ...current, page }));
+		this.notificationsState.setFilters({ ...this.notificationsState.getState().filters, page });
 	}
 
 	loadNotifications(): void {
-		const campaignId = this.notificationsState.activeCampaignId();
+		const currentState = this.notificationsState.getState();
+		const campaignId = currentState.activeCampaignId;
 		if (!campaignId) {
 			return;
 		}
 
-		const filters = this.notificationsState.filters();
-		this.notificationsState.loading.set(true);
-		this.notificationsState.errorMessage.set(null);
+		const filters = currentState.filters;
+		this.notificationsState.setLoading(true);
+		this.notificationsState.setErrorMessage(null);
 
 		this.notificationService.getCampaignNotifications(campaignId, filters).pipe(
 			tap((response) => {
-				this.notificationsState.page.set(normalizeNotificationPage(response));
-				this.notificationsState.loaded.set(true);
-				this.notificationsState.lastFetched.set(Date.now());
-				this.notificationsState.loading.set(false);
+				this.notificationsState.setPage(normalizeNotificationPage(response));
+				this.notificationsState.setLoaded(true);
+				this.notificationsState.setLastFetched(Date.now());
+				this.notificationsState.setLoading(false);
 			}),
 			tap({
 				error: () => {
-					this.notificationsState.loading.set(false);
-					this.notificationsState.errorMessage.set('Không thể tải danh sách thông báo.');
+					this.notificationsState.setLoading(false);
+					this.notificationsState.setErrorMessage('Không thể tải danh sách thông báo.');
 				},
 			}),
 		).subscribe();
 	}
 
 	retryNotification(notificationId: string | number): void {
-		this.notificationsState.retryLoading.set(true);
-		this.notificationsState.retryingNotificationId.set(notificationId);
-		this.notificationsState.retryErrorMessage.set(null);
+		this.markNotificationAsPending(notificationId);
+		this.notificationsState.setRetryLoading(true);
+		this.notificationsState.setRetryingNotificationId(notificationId);
+		this.notificationsState.setRetryErrorMessage(null);
 
 		this.notificationService.retryNotification(notificationId).pipe(
 			tap(() => {
-				this.notificationsState.retryLoading.set(false);
-				this.notificationsState.retryingNotificationId.set(null);
-				this.loadNotifications();
+				this.notificationsState.setRetryLoading(false);
+				this.notificationsState.setRetryingNotificationId(null);
 			}),
 			tap({
 				error: () => {
-					this.notificationsState.retryLoading.set(false);
-					this.notificationsState.retryingNotificationId.set(null);
-					this.notificationsState.retryErrorMessage.set('Không thể gửi lại thông báo.');
+					this.notificationsState.setRetryLoading(false);
+					this.notificationsState.setRetryingNotificationId(null);
+					this.notificationsState.setRetryErrorMessage('Không thể gửi lại thông báo.');
 				},
 			}),
 		).subscribe();
 	}
 
 	applyRealtimeUpdate(notification: CampaignNotificationSummary): void {
-		const currentPage = this.notificationsState.page();
+		const currentPage = this.notificationsState.getState().page;
 		const nextItems = [notification, ...currentPage.items.filter((item) => item.id !== notification.id)];
-		this.notificationsState.page.set({ ...currentPage, items: nextItems });
+		this.notificationsState.setPage({ ...currentPage, items: nextItems });
+	}
+
+	private markNotificationAsPending(notificationId: string | number): void {
+		const currentState = this.notificationsState.getState();
+		const currentPage = currentState.page;
+		const nextItems = currentPage.items.map((item) => (
+			String(item.id) === String(notificationId)
+				? { ...item, status: 'PENDING' }
+				: item
+		));
+
+		if (nextItems === currentPage.items) {
+			return;
+		}
+
+		this.notificationsState.setPage({ ...currentPage, items: nextItems });
+	}
+
+	ngOnDestroy(): void {
+		this.realtimeSubscription?.unsubscribe();
+		this.realtimeSubscription = null;
 	}
 }

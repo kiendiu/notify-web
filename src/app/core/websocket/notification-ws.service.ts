@@ -6,6 +6,7 @@ import {
   ActivitySocketEvent,
   CampaignLegacySocketEvent,
   CampaignSocketEvent,
+  NotificationDeviceStatusUpdateEvent,
   NotificationSocketEvent,
 } from './websocket.models';
 import { WS_TOPICS } from './websocket-topics.constants';
@@ -37,6 +38,17 @@ export class NotificationWsService implements OnDestroy {
       map((message) => this.parseJsonMessage<NotificationSocketEvent>(message.body)),
       tap((event) => console.info('[WS][NOTIFICATIONS] parsed ->', event)),
       filter((event): event is NotificationSocketEvent => event !== null),
+      share(),
+    );
+  }
+
+  watchNotificationDeviceStatus(notificationId: string | number): Observable<NotificationDeviceStatusUpdateEvent> {
+    this.activateOnce();
+    return this.rxStomp.watch(WS_TOPICS.NOTIFICATION_DEVICE_STATUS(notificationId)).pipe(
+      tap((message) => console.info(`[WS][NOTIFICATION_DEVICE_STATUS:${notificationId}] raw ->`, message.body)),
+      map((message) => this.parseNotificationDeviceStatusMessage(message.body)),
+      tap((event) => console.info(`[WS][NOTIFICATION_DEVICE_STATUS:${notificationId}] parsed ->`, event)),
+      filter((event): event is NotificationDeviceStatusUpdateEvent => event !== null),
       share(),
     );
   }
@@ -78,14 +90,44 @@ export class NotificationWsService implements OnDestroy {
     }
   }
 
-  private parseCampaignMessage(rawBody: string): CampaignSocketEvent | CampaignLegacySocketEvent | null {
-    const jsonEvent = this.parseJsonMessage<CampaignSocketEvent>(rawBody);
-    if (jsonEvent) {
-      return jsonEvent;
+  private parseNotificationDeviceStatusMessage(rawBody: string): NotificationDeviceStatusUpdateEvent | null {
+    const parsed = this.parseJsonMessage<unknown>(rawBody);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
     }
 
+    const envelope = parsed as { data?: unknown };
+    const payload = envelope.data ?? parsed;
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    const candidate = payload as Partial<NotificationDeviceStatusUpdateEvent>;
+    if (!candidate.deviceId || !candidate.status) {
+      return null;
+    }
+
+    return {
+      event: candidate.event ?? 'DEVICE_STATUS_UPDATE',
+      deviceId: candidate.deviceId,
+      status: candidate.status,
+      errorMessage: candidate.errorMessage ?? null,
+      latestLogId: candidate.latestLogId ?? null,
+    };
+  }
+
+  private parseCampaignMessage(rawBody: string): CampaignSocketEvent | CampaignLegacySocketEvent | null {
     const parts = rawBody.split(':');
     if (parts.length !== 2) {
+      if (!rawBody.trim().startsWith('{')) {
+        return null;
+      }
+
+      const jsonEvent = this.parseJsonMessage<CampaignSocketEvent>(rawBody);
+      if (jsonEvent) {
+        return jsonEvent;
+      }
+
       return null;
     }
 

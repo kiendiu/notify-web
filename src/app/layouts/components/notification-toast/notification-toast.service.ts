@@ -9,7 +9,7 @@ export interface NotificationToastState {
 	callback?: () => void;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class NotificationService {
 	private readonly toastState = signal<NotificationToastState | null>(null);
 	private nextToastId = 0;

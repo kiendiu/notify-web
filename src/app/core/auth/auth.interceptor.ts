@@ -6,19 +6,18 @@ import {
 	HttpInterceptor,
 	HttpRequest,
 } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, filter, switchMap, take } from 'rxjs/operators';
-import { TokenStorageService } from './services/token-storage.service';
+import { Observable, throwError } from 'rxjs';
+import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { TokenVaultService } from './services/token-vault.service';
 import { AuthService } from '../../data/services/auth.service';
 import { ApiConstant } from '../constants/api.constant';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-	private isRefreshing = false;
-	private refreshTokenSubject = new BehaviorSubject<string | null>(null);
+	private refreshInFlight$: Observable<string> | null = null;
 
 	constructor(
-		private tokenStorage: TokenStorageService,
+		private tokenVault: TokenVaultService,
 		private authService: AuthService,
 	) {}
 
@@ -27,7 +26,7 @@ export class AuthInterceptor implements HttpInterceptor {
 			return next.handle(request);
 		}
 
-		const accessToken = this.tokenStorage.getAccessToken();
+		const accessToken = this.tokenVault.getAccessToken();
 		if (accessToken) {
 			request = request.clone({
 				setHeaders: {
@@ -38,35 +37,34 @@ export class AuthInterceptor implements HttpInterceptor {
 
 		return next.handle(request).pipe(
 			catchError((error: HttpErrorResponse) => {
-				if (this.shouldRefresh(error.status) && !this.isRefreshing) {
-					this.isRefreshing = true;
-					this.refreshTokenSubject.next(null);
-
-					return this.authService.refreshToken().pipe(
-						switchMap((response) => {
-							this.isRefreshing = false;
-							this.refreshTokenSubject.next(response.accessToken);
-							return next.handle(this.addToken(request, response.accessToken));
-						}),
+				if (this.shouldRefresh(error.status)) {
+					return this.getRefreshAccessToken().pipe(
+						switchMap((token) => next.handle(this.addToken(request, token))),
 						catchError((err) => {
-							this.isRefreshing = false;
 							this.authService.logout();
 							return throwError(() => err);
 						}),
 					);
 				}
 
-				if (this.shouldRefresh(error.status) && this.isRefreshing) {
-					return this.refreshTokenSubject.pipe(
-						filter((token) => token !== null),
-						take(1),
-						switchMap((token) => next.handle(this.addToken(request, token!))),
-					);
-				}
-
 				return throwError(() => error);
 			}),
 		);
+	}
+
+	private getRefreshAccessToken(): Observable<string> {
+		if (!this.refreshInFlight$) {
+			this.refreshInFlight$ = this.authService.refreshAccessToken().pipe(
+				map((response) => response.accessToken),
+				tap((token) => this.tokenVault.setAccessToken(token)),
+				finalize(() => {
+					this.refreshInFlight$ = null;
+				}),
+				shareReplay({ bufferSize: 1, refCount: false }),
+			);
+		}
+
+		return this.refreshInFlight$;
 	}
 
 	private addToken(request: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
@@ -82,6 +80,6 @@ export class AuthInterceptor implements HttpInterceptor {
 	}
 
 	private isAuthEndpoint(url: string): boolean {
-		return url.includes(ApiConstant.AUTH.GOOGLE_LOGIN) || url.includes(ApiConstant.AUTH.REFRESH_TOKEN);
+		return url.includes(ApiConstant.AUTH.GOOGLE_LOGIN) || url.includes(ApiConstant.AUTH.REFRESH_TOKEN) || url.includes(ApiConstant.AUTH.LOGOUT);
 	}
 }

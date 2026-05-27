@@ -108,7 +108,7 @@
     </div>
   } @else {
     <div class="campaign-view-panel campaign-view-enter">
-      <ng-container *ngComponentOutlet="editorComponent; inputs: { onBack: handleEditorBack }"></ng-container>
+      <ng-container *ngComponentOutlet="editorComponent; inputs: { onBack: handleEditorBack, onCreated: handleCampaignCreated }"></ng-container>
     </div>
   }
 </div>

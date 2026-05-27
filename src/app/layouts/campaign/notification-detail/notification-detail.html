@@ -27,7 +27,17 @@
           <div class="device-list">
             @for (detail of notificationDetails(); track trackByDeviceDetailId($index, detail)) {
               <div class="device-item">
-                <div class="device-header"><span class="device-name">{{ detail.deviceName || 'Thiết bị không xác định' }}</span><span class="device-destination mono-text">{{ getNotificationDestination(detail) }}</span></div>
+                <div class="device-header">
+                  <div class="device-meta">
+                    <span class="device-name">{{ detail.deviceName || 'Thiết bị không xác định' }}</span>
+                    <span class="device-destination mono-text">{{ getNotificationDestination(detail) }}</span>
+                  </div>
+                  @if (isFailedStatus(detail.status)) {
+                    <button type="button" class="btn-device-retry" [disabled]="isRetryingDevice(detail)" (click)="onRetryDevice(detail); $event.stopPropagation()">
+                      <span>Gửi lại</span>
+                    </button>
+                  }
+                </div>
                 <div class="device-details">
                   <div class="detail-row"><span class="detail-label">Trạng thái:</span><div class="status-row"><span class="status-dot" [style.backgroundColor]="getStatusDotColor(detail.status)"></span><span class="status-text" [style.color]="getStatusTextStyleColor(detail.status)">{{ getNotificationStatusText(detail.status) }}</span></div></div>
                   <div class="detail-row"><span class="detail-label">Lần thử lại:</span><span>{{ getNotificationRetryText(detail) }}</span></div>

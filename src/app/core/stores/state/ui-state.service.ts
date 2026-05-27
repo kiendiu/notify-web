@@ -12,7 +12,7 @@ export interface UiViewStateBinding<TView extends string, TSelected> {
   deserializeSelected?: (rawValue: string) => TSelected | null;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class UiStateService {
   private readonly prefix = 'kien-notify-web:ui:';
   private readonly stateService = inject(StateService);

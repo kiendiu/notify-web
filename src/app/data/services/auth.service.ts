@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, firstValueFrom, map, of, tap } from 'rxjs';
 import { ApiConstant } from '../../core/constants/api.constant';
-import { TokenStorageService } from '../../core/auth/services/token-storage.service';
-import { AuthPayload, AuthResponse, AuthState } from '../../managements/models/auth.model';
+import { TokenVaultService } from '../../core/auth/services/token-vault.service';
+import { AuthPayload, AuthResponse } from '../../managements/models/auth.model';
 import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
 
 @Injectable({
@@ -10,115 +10,85 @@ import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
 })
 export class AuthService {
 	private readonly apiEngine = inject(API_ENGINE);
-	private readonly tokenStorage = inject(TokenStorageService);
-	private readonly STORAGE_KEY = 'auth_state';
+	private readonly tokenVault = inject(TokenVaultService);
 
-	private authState$ = new BehaviorSubject<AuthState>(this.loadAuthState());
+	private readonly authState$ = new BehaviorSubject(false);
+
+	constructor() {
+		this.tokenVault.accessTokenChanges$.subscribe((token) => {
+			this.authState$.next(Boolean(token));
+		});
+	}
 
 	login(payload: AuthPayload): Observable<AuthResponse> {
-		return this.apiEngine.post<AuthResponse>(ApiConstant.AUTH.GOOGLE_LOGIN, payload).pipe(
+		return this.apiEngine.post<AuthResponse>(ApiConstant.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
 			tap((response) => {
-				const state: AuthState = {
-					accessToken: response.accessToken,
-					refreshToken: response.refreshToken,
-					tokenType: response.tokenType,
-					isAuthenticated: true,
-				};
-
-				this.tokenStorage.setTokens({
-					accessToken: response.accessToken,
-					refreshToken: response.refreshToken,
-					tokenType: response.tokenType,
-					deviceId: payload.deviceId,
-				});
-
-				this.saveAuthState(state);
-				this.authState$.next(state);
+				this.setSession(response.accessToken);
 			}),
 		);
 	}
 
 	logout(): void {
-		localStorage.removeItem(this.STORAGE_KEY);
-		this.tokenStorage.clearTokens();
-
-		this.authState$.next({
-			accessToken: null,
-			refreshToken: null,
-			tokenType: null,
-			isAuthenticated: false,
-		});
-	}
-
-	getAuthState(): Observable<AuthState> {
-		return this.authState$.asObservable();
+		this.clearSession();
+		this.apiEngine.post<void>(ApiConstant.AUTH.LOGOUT, {}, { withCredentials: true }).pipe(
+			catchError(() => of(void 0)),
+		).subscribe();
 	}
 
 	isAuthenticated(): boolean {
-		return this.authState$.value.isAuthenticated;
+		return this.authState$.value;
 	}
 
 	getAccessToken(): string | null {
-		return this.authState$.value.accessToken;
+		return this.tokenVault.getAccessToken();
 	}
 
-	getRefreshToken(): string | null {
-		return this.authState$.value.refreshToken;
-	}
-
-	getTokenType(): string | null {
-		return this.authState$.value.tokenType;
-	}
-
-	refreshToken(): Observable<AuthResponse> {
-		const refreshToken = this.tokenStorage.getRefreshToken();
-		const deviceId = this.tokenStorage.getDeviceId();
-
-		if (!refreshToken || !deviceId) {
-			return throwError(() => new Error('No refresh token or device ID available'));
-		}
-
-		return this.apiEngine.post<AuthResponse>(ApiConstant.AUTH.REFRESH_TOKEN, {
-			refreshToken,
-			deviceId,
-		}).pipe(
-			tap((response) => {
-				this.tokenStorage.setTokens({
-					accessToken: response.accessToken,
-					refreshToken: response.refreshToken,
-					tokenType: response.tokenType,
-					deviceId,
-				});
-
-				const state: AuthState = {
-					accessToken: response.accessToken,
-					refreshToken: response.refreshToken,
-					tokenType: response.tokenType,
-					isAuthenticated: true,
-				};
-
-				this.saveAuthState(state);
-				this.authState$.next(state);
-			}),
+	refreshAccessToken(): Observable<AuthResponse> {
+		return this.apiEngine.post<AuthResponse>(ApiConstant.AUTH.REFRESH_TOKEN, {}, { withCredentials: true }).pipe(
+			tap((response) => this.setSession(response.accessToken)),
 		);
 	}
 
-	private saveAuthState(state: AuthState): void {
-		localStorage.setItem(this.STORAGE_KEY, JSON.stringify(state));
+	bootstrapSession(): Promise<void> {
+		return this.tokenVault.requestAccessToken().then((sharedToken) => {
+			if (sharedToken) {
+				this.setSession(sharedToken);
+				return;
+			}
+
+			return this.tokenVault.restorePersistedAccessToken().then((persistedToken) => {
+				if (persistedToken) {
+					this.setSession(persistedToken);
+					return;
+				}
+
+				return firstValueFrom(
+					this.refreshAccessToken().pipe(
+						map(() => void 0),
+						catchError(() => {
+							this.clearSession();
+							return of(void 0);
+						}),
+					),
+				);
+			});
+		});
 	}
 
-	private loadAuthState(): AuthState {
-		const stored = localStorage.getItem(this.STORAGE_KEY);
+	private setSession(accessToken: string): void {
+		this.tokenVault.setAccessToken(accessToken);
+		this.clearLegacyAuthStorage();
+	}
 
-		if (stored) {
-			return JSON.parse(stored) as AuthState;
+	private clearSession(): void {
+		this.tokenVault.clear();
+		this.clearLegacyAuthStorage();
+	}
+
+	private clearLegacyAuthStorage(): void {
+		const legacyKeys = ['auth_state', 'access_token', 'refresh_token', 'token_type'];
+		for (const key of legacyKeys) {
+			localStorage.removeItem(key);
 		}
-
-		return {
-			accessToken: null,
-			refreshToken: null,
-			tokenType: null,
-			isAuthenticated: false,
-		};
 	}
 }

@@ -1,4 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
+import { map } from 'rxjs';
+import { StateService } from '../../core/stores/state/state.service';
 
 export interface AuthState {
 	isLoading: boolean;
@@ -14,27 +16,39 @@ export const initialAuthState: AuthState = {
 	user: null,
 };
 
-@Injectable({ providedIn: 'root' })
-export class AuthStateService {
-	readonly isLoading = signal(false);
-	readonly errorMessage = signal<string | null>(null);
-	readonly isAuthenticated = signal(false);
-	readonly user = signal<unknown | null>(null);
-	readonly state = computed<AuthState>(() => ({
-		isLoading: this.isLoading(),
-		errorMessage: this.errorMessage(),
-		isAuthenticated: this.isAuthenticated(),
-		user: this.user(),
-	}));
+@Injectable()
+export class AuthStateService implements OnDestroy {
+	private readonly stateKey = 'kien-notify-web:state:auth';
+	private readonly stateService = inject(StateService);
+	readonly state$ = this.stateService.watch<AuthState>(this.stateKey).pipe(map((state) => state ?? initialAuthState));
 
-	setLoading(isLoading: boolean): void { this.isLoading.set(isLoading); }
-	setErrorMessage(errorMessage: string | null): void { this.errorMessage.set(errorMessage); }
-	setAuthenticated(isAuthenticated: boolean): void { this.isAuthenticated.set(isAuthenticated); }
-	setUser(user: unknown | null): void { this.user.set(user); }
+	constructor() {
+		if (!this.stateService.get<AuthState>(this.stateKey)) {
+			this.stateService.set(this.stateKey, initialAuthState);
+		}
+	}
+
+	getState(): AuthState {
+		return this.stateService.get<AuthState>(this.stateKey) ?? initialAuthState;
+	}
+
+	setLoading(isLoading: boolean): void { this.patch({ isLoading }); }
+	setErrorMessage(errorMessage: string | null): void { this.patch({ errorMessage }); }
+	setAuthenticated(isAuthenticated: boolean): void { this.patch({ isAuthenticated }); }
+	setUser(user: unknown | null): void { this.patch({ user }); }
 	reset(): void {
-		this.isLoading.set(false);
-		this.errorMessage.set(null);
-		this.isAuthenticated.set(false);
-		this.user.set(null);
+		this.stateService.set(this.stateKey, initialAuthState);
+	}
+
+	ngOnDestroy(): void {
+		this.stateService.remove(this.stateKey);
+	}
+
+	private patch(partial: Partial<AuthState>): void {
+		this.stateService.update<AuthState>(this.stateKey, (current) => ({
+			...initialAuthState,
+			...(current ?? initialAuthState),
+			...partial,
+		}));
 	}
 }

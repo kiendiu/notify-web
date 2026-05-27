@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { ApiConstant } from '../../core/constants/api.constant';
 import { CampaignNotificationFilters, CampaignNotificationSearchResponse, NotificationDetailsResponse } from '../../managements/models/notifications.model';
 import { ActivitySocketEvent } from '../../core/websocket/websocket.models';
@@ -54,11 +54,13 @@ export class NotificationService {
 	}
 
 	retryNotification(notificationId: string | number): Observable<void> {
-		// Invalidate cache on retry
 		const cacheKey = buildNotificationDetailCacheKey(notificationId);
 		this.cacheEngine.remove(cacheKey);
-
-		return this.apiEngine.post<void>(ApiConstant.CAMPAIGNS.NOTIFICATION_RETRY(notificationId), {});
+		return this.apiEngine.post<string>(
+			ApiConstant.CAMPAIGNS.NOTIFICATION_RETRY(notificationId),
+			{},
+			{ responseType: 'text' },
+		).pipe(map(() => void 0));
 	}
 
 	getRecentActivities(): Observable<ActivitySocketEvent[]> {

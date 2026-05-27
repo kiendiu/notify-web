@@ -230,9 +230,18 @@
 
 .device-header {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.device-meta {
+  display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
 .device-name {
@@ -249,6 +258,34 @@
   white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+
+.btn-device-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.18);
+  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: #b91c1c;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.72;
+    cursor: wait;
+    transform: none;
+  }
 }
 
 .device-details {
