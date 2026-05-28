@@ -1,16 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { CACHE_ENGINE } from '../../core/stores/cache/cache.engine';
-import {
-	TemplateDto,
-	UsersSearchResponse,
-} from '../../managements/states/campaign-editor.state';
+import { TemplateDto, UsersSearchResponse } from '../../managements/states/campaign-editor.state';
 
 export const CAMPAIGN_EDITOR_SCOPE = 'campaign.editor.preview';
 export const CAMPAIGN_EDITOR_TTL_MS = 5 * 60 * 1000;
 
-@Injectable({
-	providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class CampaignEditorCache {
 	private readonly cacheEngine = inject(CACHE_ENGINE);
 
@@ -19,7 +14,7 @@ export class CampaignEditorCache {
 			this.buildTemplatesKey(),
 		);
 
-		if (
+		if ( 
 			!this.cacheEngine.isFresh(
 				cache,
 				CAMPAIGN_EDITOR_TTL_MS,
@@ -31,9 +26,7 @@ export class CampaignEditorCache {
 		return cache?.value ?? null;
 	}
 
-	setTemplates(
-		templates: TemplateDto[],
-	): void {
+	setTemplates( templates: TemplateDto[] ): void {
 		this.cacheEngine.set(
 			this.buildTemplatesKey(),
 			templates,
@@ -45,8 +38,7 @@ export class CampaignEditorCache {
 		page: number,
 		size: number,
 	): UsersSearchResponse | null {
-		const cache =
-			this.cacheEngine.get<UsersSearchResponse>(
+		const cache = this.cacheEngine.get<UsersSearchResponse>(
 				this.buildUsersKey(
 					keyword,
 					page,

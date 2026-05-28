@@ -38,11 +38,17 @@ export class CampaignsStateService {
 	}
 
 	setFilters(filters: CampaignSearchFilters): void { this.patch({ filters }); }
+	
 	setPage(page: CampaignPage): void { this.patch({ page }); }
+
 	setLoading(loading: boolean): void { this.patch({ loading }); }
+
 	setLoaded(loaded: boolean): void { this.patch({ loaded }); }
+
 	setLastFetched(lastFetched: number | null): void { this.patch({ lastFetched }); }
+
 	setErrorMessage(errorMessage: string | null): void { this.patch({ errorMessage }); }
+
 	reset(): void {
 		this.stateService.set(this.stateKey, createInitialCampaignState());
 	}

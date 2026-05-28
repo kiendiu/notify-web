@@ -2,18 +2,22 @@ import { ChangeDetectorRef, DestroyRef, Injectable, Injector, inject } from '@an
 import { debounceTime } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SearchService } from '../../data/services/search.service';
-import { CampaignCreateResponse, CampaignSummary, CampaignSortDirection, CampaignStatusFilter } from '../../managements/models/campaigns.model';
+import { CampaignCreateResponse, CampaignSummary, CampaignSortDirection, CampaignStatusFilter, normalizeCampaignPage } from '../../managements/models/campaigns.model';
 import { CampaignsQuery } from '../../managements/queries/campaigns.query';
+import { CampaignEditorQuery } from '../../managements/queries/campaign-editor.query';
 import { CampaignsStateService, initialCampaignState } from '../../managements/states/campaigns.state';
 import { CampaignEditorState } from '../../managements/states/campaign-editor.state';
+import { NotificationWsService } from '../../core/websocket/notification-ws.service';
 import { CampaignEditorComponent } from './campaign-editor/campaign-editor.component';
 import { NotificationsComponent } from './notifications/notifications.component';
 
 @Injectable()
 export class CampaignsController {
 	private readonly campaignsQuery = inject(CampaignsQuery);
+	private readonly campaignEditorQuery = inject(CampaignEditorQuery);
 	private readonly campaignsState = inject(CampaignsStateService);
 	private readonly searchService = inject(SearchService);
+	private readonly websocket = inject(NotificationWsService);
 	private readonly cdr = inject(ChangeDetectorRef);
 	readonly formService = inject(CampaignEditorState);
 
@@ -48,57 +52,56 @@ export class CampaignsController {
 	init(destroyRef: DestroyRef, injector: Injector): void {
 		this.viewValue = 'list';
 		this.selectedCampaignValue = null;
+		this.clearPreview();
+		this.connectRealtime(destroyRef);
 
 		this.campaignsState.state$.pipe(takeUntilDestroyed(destroyRef)).subscribe((state) => {
 			this.campaignStateValue = state ?? initialCampaignState;
 			this.cdr.markForCheck();
 		});
 
-		this.campaignsQuery.clearPreview();
-		this.campaignsQuery.connectRealtime();
-
-		this.campaignsQuery.setCampaignPage(0);
-		this.campaignsQuery.loadCampaigns();
-		this.campaignsQuery.loadTemplates();
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page: 0 });
+		this.loadCampaigns();
+		this.loadTemplates();
 
 		this.searchService.getSearch().pipe(debounceTime(250), takeUntilDestroyed(destroyRef)).subscribe((keyword) => {
-			this.campaignsQuery.setCampaignName(keyword ?? '');
-			this.campaignsQuery.loadCampaigns();
+			this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, campaignName: keyword ?? '', page: 0 });
+			this.loadCampaigns();
 		});
 	}
 
 	showList(): void {
 		this.viewValue = 'list';
 		this.selectedCampaignValue = null;
-		this.campaignsQuery.clearPreview();
+		this.clearPreview();
 		this.formService.resetFormState();
 		this.searchService.setSearch('');
 	}
 
 	showEditor(): void {
 		this.viewValue = 'editor';
-		this.campaignsQuery.loadTemplates();
+		this.loadTemplates();
 		this.selectedCampaignValue = null;
 	}
 
 	reloadList(): void {
-		this.campaignsQuery.setCampaignPage(0);
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page: 0 });
 		this.loadCampaigns();
 	}
 
 	updateStatus(status: string): void {
-		this.campaignsQuery.setCampaignStatus(this.normalizeStatus(status));
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, status: this.normalizeStatus(status), page: 0 });
 		this.loadCampaigns();
 	}
 
 	updateSortDirection(sortDirection: string): void {
-		this.campaignsQuery.setCampaignSortDirection(this.normalizeSortDirection(sortDirection));
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, sortDirection: this.normalizeSortDirection(sortDirection), page: 0 });
 		this.loadCampaigns();
 	}
 
 	updateRowsPerPage(size: string): void {
 		const nextSize = Number(size) || 10;
-		this.campaignsQuery.setCampaignSize(nextSize);
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, size: nextSize, page: 0 });
 		this.loadCampaigns();
 	}
 
@@ -107,7 +110,7 @@ export class CampaignsController {
 		if (page < 0 || page >= currentPage.totalPages || page === currentPage.number) {
 			return;
 		}
-		this.campaignsQuery.setCampaignPage(page);
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page });
 		this.loadCampaigns();
 	}
 
@@ -203,7 +206,48 @@ export class CampaignsController {
 	}
 
 	private loadCampaigns(): void {
-		this.campaignsQuery.loadCampaigns();
+		const filters = this.campaignsState.getState().filters;
+		this.campaignsState.setLoading(true);
+		this.campaignsState.setErrorMessage(null);
+
+		this.campaignsQuery.loadCampaigns(filters).subscribe({
+			next: (result) => {
+				const page = normalizeCampaignPage(result.value);
+				this.campaignsState.setPage(page);
+				this.campaignsState.setLoaded(true);
+				this.campaignsState.setLastFetched(result.fetchedAt);
+				this.campaignsState.setLoading(false);
+			},
+			error: () => {
+				this.campaignsState.setLoading(false);
+				this.campaignsState.setErrorMessage('Không thể tải danh sách chiến dịch.');
+			},
+		});
+	}
+
+	private loadTemplates(): void {
+		this.formService.setTemplatesLoading(true);
+		this.formService.setErrorMessage(null);
+
+		this.campaignEditorQuery.loadTemplates().subscribe({
+			next: (templates) => {
+				this.formService.setTemplates(templates);
+			},
+			error: (error: unknown) => {
+				this.formService.setTemplatesLoading(false);
+				this.formService.setErrorMessage(error instanceof Error ? error.message : 'Không thể tải mẫu. Vui lòng thử lại.');
+			},
+		});
+	}
+
+	private clearPreview(): void {
+		this.formService.clearPreview();
+	}
+
+	private connectRealtime(destroyRef: DestroyRef): void {
+		this.websocket.watchCampaigns().pipe(takeUntilDestroyed(destroyRef)).subscribe(() => {
+			this.loadCampaigns();
+		});
 	}
 
 	private normalizeStatus(status: string): CampaignStatusFilter {

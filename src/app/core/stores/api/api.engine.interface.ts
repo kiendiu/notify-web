@@ -46,14 +46,9 @@ export interface ApiEngine {
   ): Observable<T>;
 }
 
-export const API_ENGINE =
-  new InjectionToken<ApiEngine>(
-    'API_ENGINE',
-  );
+export const API_ENGINE = new InjectionToken<ApiEngine>( 'API_ENGINE' );
 
-export function provideApiEngine(
-  implementation: Type<ApiEngine>,
-): Provider {
+export function provideApiEngine( implementation: Type<ApiEngine> ): Provider {
   return {
     provide: API_ENGINE,
     useExisting: implementation,

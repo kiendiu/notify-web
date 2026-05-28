@@ -1,16 +1,10 @@
 import { Injectable } from '@angular/core';
-import {
-	HttpErrorResponse,
-	HttpEvent,
-	HttpHandler,
-	HttpInterceptor,
-	HttpRequest,
-} from '@angular/common/http';
+import { HttpErrorResponse, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { TokenVaultService } from './services/token-vault.service';
 import { AuthService } from '../../data/services/auth.service';
-import { ApiConstant } from '../constants/api.constant';
+import { Endpoint } from '../constants/endpoint';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -27,12 +21,9 @@ export class AuthInterceptor implements HttpInterceptor {
 		}
 
 		const accessToken = this.tokenVault.getAccessToken();
+
 		if (accessToken) {
-			request = request.clone({
-				setHeaders: {
-					Authorization: `Bearer ${accessToken}`,
-				},
-			});
+			request = this.addToken(request, accessToken);
 		}
 
 		return next.handle(request).pipe(
@@ -46,7 +37,6 @@ export class AuthInterceptor implements HttpInterceptor {
 						}),
 					);
 				}
-
 				return throwError(() => error);
 			}),
 		);
@@ -80,6 +70,6 @@ export class AuthInterceptor implements HttpInterceptor {
 	}
 
 	private isAuthEndpoint(url: string): boolean {
-		return url.includes(ApiConstant.AUTH.GOOGLE_LOGIN) || url.includes(ApiConstant.AUTH.REFRESH_TOKEN) || url.includes(ApiConstant.AUTH.LOGOUT);
+		return url.includes(Endpoint.AUTH.GOOGLE_LOGIN) || url.includes(Endpoint.AUTH.REFRESH_TOKEN) || url.includes(Endpoint.AUTH.LOGOUT);
 	}
 }

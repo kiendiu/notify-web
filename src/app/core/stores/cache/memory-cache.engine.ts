@@ -4,7 +4,6 @@ import { CacheEngine, CacheEntry } from './cache.engine';
 
 @Injectable({ providedIn: 'root' })
 export class MemoryCacheEngine implements CacheEngine {
-  // Đã đổi sang inject MemoryCacheStore thay cho AkitaStore cũ
   private readonly store = inject(MemoryCacheStore);
   private readonly prefix = 'kien-notify-web:';
 
@@ -102,7 +101,6 @@ export class MemoryCacheEngine implements CacheEngine {
     try {
       window.localStorage.setItem(this.storageKey(key), JSON.stringify(entry));
     } catch {
-      // Ignore storage quota or serialization issues.
     }
   }
 

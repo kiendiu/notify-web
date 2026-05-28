@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiConstant } from '../../core/constants/api.constant';
+import { Endpoint } from '../../core/constants/endpoint';
 import { CampaignCreateRequest, CampaignCreateResponse, CampaignSearchFilters, CampaignSearchResponse } from '../../managements/models/campaigns.model';
 import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
 
@@ -8,7 +8,7 @@ import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
 export class CampaignService {
 	private readonly apiEngine = inject(API_ENGINE);
 	searchCampaigns(filters: CampaignSearchFilters): Observable<CampaignSearchResponse> {
-		return this.apiEngine.get<CampaignSearchResponse>(ApiConstant.CAMPAIGNS.SEARCH, {
+		return this.apiEngine.get<CampaignSearchResponse>(Endpoint.CAMPAIGNS.SEARCH, {
 			params: {
 				page: filters.page,
 				size: filters.size,
@@ -20,6 +20,6 @@ export class CampaignService {
 	}
 
 	createCampaign(request: CampaignCreateRequest): Observable<CampaignCreateResponse> {
-		return this.apiEngine.post<CampaignCreateResponse>(ApiConstant.CAMPAIGNS.CREATE, request);
+		return this.apiEngine.post<CampaignCreateResponse>(Endpoint.CAMPAIGNS.CREATE, request);
 	}
 }

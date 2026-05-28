@@ -2,14 +2,16 @@ import { ChangeDetectionStrategy, Component, DestroyRef, Injector, Input, inject
 import { CommonModule } from '@angular/common';
 import { CampaignSummary } from '../../../managements/models/campaigns.model';
 import { CampaignNotificationSummary, NotificationDeviceDetail } from '../../../managements/models/notifications.model';
+import { NotificationDetailQuery } from '../../../managements/queries/notification-detail.query';
 import { NotificationsController } from './notifications.controller';
+import { NotificationDetailStateService } from '../../../managements/states/notification-detail.state';
 import { NotificationDetailComponent } from '../notification-detail/notification-detail.component';
 
 @Component({
 	selector: 'app-notifications',
 	standalone: true,
 	imports: [CommonModule, NotificationDetailComponent],
-	providers: [NotificationsController],
+	providers: [NotificationsController, NotificationDetailQuery, NotificationDetailStateService],
 	templateUrl: './notifications.html',
 	styleUrl: './notifications.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,

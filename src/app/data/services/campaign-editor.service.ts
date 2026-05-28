@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
-import { ApiConstant } from '../../core/constants/api.constant';
+import { Endpoint } from '../../core/constants/endpoint';
 
 import {
     CampaignChannel,
@@ -22,7 +22,7 @@ export class CampaignEditorService {
 
     getTemplates(): Observable<TemplateDto[]> {
         return this.apiEngine.get<TemplateDto[]>(
-            ApiConstant.CAMPAIGNS.TEMPLATES_ALL,
+            Endpoint.CAMPAIGNS.TEMPLATES_ALL,
         );
     }
 
@@ -32,7 +32,7 @@ export class CampaignEditorService {
         size: number,
     ): Observable<UsersSearchResponse> {
         return this.apiEngine.get<UsersSearchResponse>(
-            ApiConstant.CAMPAIGNS.USERS_SEARCH,
+            Endpoint.CAMPAIGNS.USERS_SEARCH,
             {
                 params: {
                     page,
@@ -49,7 +49,7 @@ export class CampaignEditorService {
         request: CampaignCreateRequest,
     ): Observable<CampaignCreateResponse> {
         return this.apiEngine.post<CampaignCreateResponse>(
-            ApiConstant.CAMPAIGNS.CREATE,
+            Endpoint.CAMPAIGNS.CREATE,
             request,
         );
     }

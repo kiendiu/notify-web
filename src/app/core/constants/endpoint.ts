@@ -1,4 +1,4 @@
-export class ApiConstant {
+export class Endpoint {
 
   static readonly BASE_URL =
     'http://localhost:8087/api';

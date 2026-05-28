@@ -1,19 +1,21 @@
 import { ChangeDetectorRef, DestroyRef, Injectable, OnDestroy, inject } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SearchService } from '../../../data/services/search.service';
-import { NotificationDetailService } from '../../../data/services/notification-detail.service';
 import { CampaignSummary } from '../../../managements/models/campaigns.model';
-import { CampaignNotificationFilters, CampaignNotificationSummary, NotificationDeviceDetail, normalizeNotificationDetails } from '../../../managements/models/notifications.model';
+import { CampaignNotificationFilters, CampaignNotificationSummary, NotificationDeviceDetail } from '../../../managements/models/notifications.model';
+import { NotificationDetailQuery } from '../../../managements/queries/notification-detail.query';
 import { NotificationsQuery } from '../../../managements/queries/notifications.query';
-import { NotificationsStateService, initialNotificationState } from '../../../managements/states/notifications.state';
+import { NotificationDetailStateService } from '../../../managements/states/notification-detail.state';
+import { NotificationsStateService } from '../../../managements/states/notifications.state';
 import { NotificationWsService } from '../../../core/websocket/notification-ws.service';
-import { NotificationSocketEvent } from '../../../core/websocket/websocket.models';
+import { NotificationDeviceStatusUpdateEvent, NotificationSocketEvent } from '../../../core/websocket/websocket.models';
 
 @Injectable()
 export class NotificationsController implements OnDestroy {
-	private readonly notificationDetailService = inject(NotificationDetailService);
+	private readonly notificationDetailQuery = inject(NotificationDetailQuery);
+	private readonly notificationDetailState = inject(NotificationDetailStateService);
 	private readonly searchService = inject(SearchService);
 	private readonly notificationsQuery = inject(NotificationsQuery);
 	private readonly notificationsState = inject(NotificationsStateService);
@@ -23,23 +25,17 @@ export class NotificationsController implements OnDestroy {
 
 	private campaignValue: Pick<CampaignSummary, 'id'> | CampaignSummary | null = null;
 	private onBackValue: (() => void) | null = null;
-	private selectedNotificationValue: CampaignNotificationSummary | null = null;
-	private notificationDetailsValue: NotificationDeviceDetail[] = [];
-	private notificationDetailsLoadingValue = false;
-	private notificationDetailsErrorMessageValue: string | null = null;
-	private showNotificationDetailsPanelValue = false;
-	private notificationStateValue = initialNotificationState;
-	private retryingDeviceIdValue: string | null = null;
 	private selectedNotificationUpdatesSubscription: Subscription | null = null;
+	private selectedNotificationDeviceStatusSubscription: Subscription | null = null;
 
-	readonly notificationState = () => this.notificationStateValue;
+	readonly notificationState = () => this.notificationsState.getState();
 	readonly campaign = () => this.campaignValue;
 	readonly onBack = () => this.onBackValue;
-	readonly selectedNotification = () => this.selectedNotificationValue;
-	readonly notificationDetails = () => this.notificationDetailsValue;
-	readonly notificationDetailsLoading = () => this.notificationDetailsLoadingValue;
-	readonly notificationDetailsErrorMessage = () => this.notificationDetailsErrorMessageValue;
-	readonly showNotificationDetailsPanel = () => this.showNotificationDetailsPanelValue;
+	readonly selectedNotification = () => this.notificationDetailState.getState().selectedNotification;
+	readonly notificationDetails = () => this.notificationDetailState.getState().notificationDetails;
+	readonly notificationDetailsLoading = () => this.notificationDetailState.getState().notificationDetailsLoading;
+	readonly notificationDetailsErrorMessage = () => this.notificationDetailState.getState().notificationDetailsErrorMessage;
+	readonly showNotificationDetailsPanel = () => this.notificationDetailState.getState().showNotificationDetailsPanel;
 	readonly notificationFilters = () => this.notificationState().filters;
 	readonly notificationItems = () => this.notificationState().page.items;
 	readonly notificationPage = () => this.notificationState().page;
@@ -48,7 +44,7 @@ export class NotificationsController implements OnDestroy {
 	readonly retryLoading = () => this.notificationState().retryLoading;
 	readonly retryingNotificationId = () => this.notificationState().retryingNotificationId;
 	readonly retryError = () => this.notificationState().retryErrorMessage;
-	readonly retryingDeviceId = () => this.retryingDeviceIdValue;
+	readonly retryingDeviceId = () => this.notificationDetailState.getState().retryingDeviceId;
 	readonly notificationCount = () => this.notificationPage().totalElements;
 	readonly pageNumbers = () => this.buildPageNumbers(this.notificationPage().totalPages, this.notificationPage().number);
 	readonly hasNoNotifications = () => !this.notificationLoading() && this.notificationItems().length === 0;
@@ -57,18 +53,22 @@ export class NotificationsController implements OnDestroy {
 
 	init(destroyRef: DestroyRef, injector: { get<T>(token: unknown, notFoundValue?: unknown, flags?: unknown): T }): void {
 		this.destroyRef = destroyRef;
-		this.notificationsState.state$.pipe(takeUntilDestroyed(destroyRef)).subscribe((state) => {
-			this.notificationStateValue = state ?? initialNotificationState;
+		this.notificationsState.state$.pipe(takeUntilDestroyed(destroyRef)).subscribe(() => {
 			this.cdr.markForCheck();
 		});
-		this.notificationsQuery.connectRealtime();
+
+		this.notificationWsService.watchNotifications().pipe(takeUntilDestroyed(destroyRef)).subscribe(() => {
+			if (this.campaign()) {
+				this.loadNotifications(true);
+			}
+		});
 
 		this.searchService.getSearch().pipe(debounceTime(250), takeUntilDestroyed(destroyRef)).subscribe((keyword) => {
 			if (!this.campaign()) {
 				return;
 			}
-			this.notificationsQuery.setNotificationFilters({ keyWord: keyword ?? '', page: 0 });
-			this.notificationsQuery.loadNotifications();
+			this.notificationsState.setKeyword(keyword ?? '');
+			this.loadNotifications();
 		});
 	}
 
@@ -77,13 +77,15 @@ export class NotificationsController implements OnDestroy {
 
 		if (!campaign) {
 			this.unsubscribeFromSelectedNotificationUpdates();
-			this.notificationsQuery.clearNotificationState();
+			this.unsubscribeFromSelectedNotificationDeviceStatusUpdates();
+			this.notificationsState.reset();
 			this.closeNotificationDetailsPanel();
 			return;
 		}
 
-		this.notificationsQuery.setActiveNotificationCampaign(String(campaign.id));
-		this.notificationsQuery.loadNotifications();
+		this.notificationsState.setActiveCampaignId(String(campaign.id));
+		this.notificationsState.setFiltersToFirstPage();
+		this.loadNotifications();
 	}
 
 	setOnBack(onBack: (() => void) | null): void {
@@ -94,8 +96,8 @@ export class NotificationsController implements OnDestroy {
 		if (!this.campaign()) {
 			return;
 		}
-		this.notificationsQuery.setNotificationPage(0);
-		this.notificationsQuery.loadNotifications();
+		this.notificationsState.setFiltersToFirstPage();
+		this.loadNotifications();
 	}
 
 	goToNotificationPage(page: number): void {
@@ -103,46 +105,47 @@ export class NotificationsController implements OnDestroy {
 		if (page < 0 || page >= currentPage.totalPages || page === currentPage.number) {
 			return;
 		}
-		this.notificationsQuery.setNotificationPage(page);
-		this.notificationsQuery.loadNotifications();
+		this.notificationsState.setPageIndex(page);
+		this.loadNotifications();
 	}
 
 	updateNotificationChannel(channel: string): void {
 		if (!this.campaign()) {
 			return;
 		}
-		this.notificationsQuery.setNotificationFilters({ channel: this.normalizeNotificationChannel(channel), page: 0 });
-		this.notificationsQuery.loadNotifications();
+		this.notificationsState.setChannel(this.normalizeNotificationChannel(channel));
+		this.loadNotifications();
 	}
 
 	updateNotificationStatus(status: string): void {
 		if (!this.campaign()) {
 			return;
 		}
-		this.notificationsQuery.setNotificationFilters({ status: this.normalizeNotificationStatus(status), page: 0 });
-		this.notificationsQuery.loadNotifications();
+		this.notificationsState.setStatus(this.normalizeNotificationStatus(status));
+		this.loadNotifications();
 	}
 
 	openNotificationDetails(notification: CampaignNotificationSummary): void {
+		const currentSelectedId = this.notificationDetailState.getState().selectedNotificationId;
+		const hasCurrentDetails = this.notificationDetailState.getState().notificationDetails.length > 0;
+		const isSameNotification = currentSelectedId !== null && String(currentSelectedId) === String(notification.id);
+
 		this.unsubscribeFromSelectedNotificationUpdates();
-		this.selectedNotificationValue = notification;
-		this.resetNotificationDetailsPanelState();
-		this.showNotificationDetailsPanelValue = true;
-		this.retryingDeviceIdValue = null;
+		this.unsubscribeFromSelectedNotificationDeviceStatusUpdates();
+		this.notificationDetailState.openPanel(notification);
 		this.cdr.markForCheck();
 		this.subscribeToSelectedNotificationUpdates(notification.id);
+		this.subscribeToSelectedNotificationDeviceStatusUpdates(notification.id);
 
-		this.loadNotificationDetails(notification.id);
+		if (!isSameNotification || !hasCurrentDetails) {
+			this.loadNotificationDetails(notification.id);
+		}
 	}
 
 	closeNotificationDetailsPanel(): void {
 		this.unsubscribeFromSelectedNotificationUpdates();
-		this.showNotificationDetailsPanelValue = false;
-		this.selectedNotificationValue = null;
-		this.notificationDetailsValue = [];
-		this.notificationDetailsErrorMessageValue = null;
-		this.notificationDetailsLoadingValue = false;
-		this.retryingDeviceIdValue = null;
+		this.unsubscribeFromSelectedNotificationDeviceStatusUpdates();
+		this.notificationDetailState.closePanel();
 		this.cdr.markForCheck();
 	}
 
@@ -151,11 +154,11 @@ export class NotificationsController implements OnDestroy {
 		if (!notification) {
 			return;
 		}
-		this.notificationsQuery.retryNotification(notification.id);
+		this.retryNotificationById(notification.id);
 	}
 
 	retryNotificationFromTable(notification: CampaignNotificationSummary): void {
-		this.notificationsQuery.retryNotification(notification.id);
+		this.retryNotificationById(notification.id);
 	}
 
 	retryNotificationDevice(detail: NotificationDeviceDetail): void {
@@ -163,24 +166,18 @@ export class NotificationsController implements OnDestroy {
 			return;
 		}
 
-		const previousDetail = this.notificationDetailsValue.find((item) => item.id === detail.id) ?? detail;
-		this.retryingDeviceIdValue = detail.deviceId ?? String(detail.id);
-		this.updateNotificationDeviceDetail(detail.id, {
-			status: 'PENDING',
-			errorMessage: null,
-			updatedAt: new Date().toISOString(),
-		});
+		this.notificationDetailState.markNotificationDetailRetryPending(detail.id, detail.deviceId ?? String(detail.id));
 		this.cdr.markForCheck();
 
-		this.notificationDetailService.retryNotificationDevice(detail.id).pipe(takeUntilDestroyed(this.destroyRef!)).subscribe({
+		this.withLifecycle(this.notificationDetailQuery.retryNotificationDevice(detail.id)).subscribe({
 			next: () => {
-				this.notificationDetailService.invalidateNotificationDetails(this.selectedNotification()!.id);
-				this.retryingDeviceIdValue = null;
+				this.notificationDetailQuery.invalidateNotificationDetails(this.selectedNotification()!.id);
+				this.notificationDetailState.setRetryingDeviceId(null);
 				this.cdr.markForCheck();
 			},
 			error: () => {
-				this.retryingDeviceIdValue = null;
-				this.updateNotificationDeviceDetail(previousDetail.id, previousDetail);
+				this.notificationDetailState.setRetryingDeviceId(null);
+				this.notificationDetailState.restoreNotificationDetail(detail);
 				this.cdr.markForCheck();
 			},
 		});
@@ -287,7 +284,7 @@ export class NotificationsController implements OnDestroy {
 	}
 
 	isRetryingDevice(detail: NotificationDeviceDetail): boolean {
-		const retryingId = this.retryingDeviceIdValue;
+		const retryingId = this.retryingDeviceId();
 		if (!retryingId) {
 			return false;
 		}
@@ -300,9 +297,20 @@ export class NotificationsController implements OnDestroy {
 		});
 	}
 
+	private subscribeToSelectedNotificationDeviceStatusUpdates(notificationId: string | number): void {
+		this.selectedNotificationDeviceStatusSubscription = this.notificationWsService.watchNotificationDeviceStatus(notificationId).subscribe((event) => {
+			this.handleSelectedNotificationDeviceStatusRealtimeEvent(event);
+		});
+	}
+
 	private unsubscribeFromSelectedNotificationUpdates(): void {
 		this.selectedNotificationUpdatesSubscription?.unsubscribe();
 		this.selectedNotificationUpdatesSubscription = null;
+	}
+
+	private unsubscribeFromSelectedNotificationDeviceStatusUpdates(): void {
+		this.selectedNotificationDeviceStatusSubscription?.unsubscribe();
+		this.selectedNotificationDeviceStatusSubscription = null;
 	}
 
 	private handleSelectedNotificationRealtimeEvent(notificationId: string | number, event: NotificationSocketEvent): void {
@@ -311,43 +319,120 @@ export class NotificationsController implements OnDestroy {
 			return;
 		}
 
-		this.selectedNotificationValue = payload;
-		this.notificationDetailService.invalidateNotificationDetails(notificationId);
-		this.loadNotificationDetails(notificationId);
+		this.notificationDetailState.setSelectedNotification(payload);
+		this.notificationDetailState.setPanelVisible(true);
+		this.refreshNotificationDetails(notificationId);
+		this.cdr.markForCheck();
+	}
 
-		if (this.retryingDeviceIdValue) {
-			this.retryingDeviceIdValue = null;
+	private handleSelectedNotificationDeviceStatusRealtimeEvent(event: NotificationDeviceStatusUpdateEvent): void {
+		if (!event.deviceId) {
+			return;
 		}
+
+		this.notificationDetailState.updateNotificationDetailByDeviceId(event.deviceId, {
+			status: event.status,
+			errorMessage: event.errorMessage ?? null,
+		});
+
+		if (this.notificationDetailState.getState().retryingDeviceId === event.deviceId) {
+			this.notificationDetailState.setRetryingDeviceId(null);
+		}
+
 		this.cdr.markForCheck();
 	}
 
 	private loadNotificationDetails(notificationId: string | number): void {
-		this.notificationDetailService.getNotificationDetails(notificationId).pipe(takeUntilDestroyed(this.destroyRef!)).subscribe({
+		this.notificationDetailState.startLoadingNotificationDetails();
+
+		this.withLifecycle(this.notificationDetailQuery.loadNotificationDetails(notificationId)).subscribe({
 			next: (response) => {
-				this.notificationDetailsValue = normalizeNotificationDetails(response);
-				this.notificationDetailsLoadingValue = false;
+				this.notificationDetailState.setNotificationDetailsFromResponse(response);
 				this.cdr.markForCheck();
 			},
 			error: () => {
-				this.notificationDetailsLoadingValue = false;
-				this.notificationDetailsErrorMessageValue = 'Không thể tải chi tiết thiết bị. Vui lòng thử lại.';
+				this.notificationDetailState.setNotificationDetailsError();
 				this.cdr.markForCheck();
 			},
 		});
 	}
 
-	private resetNotificationDetailsPanelState(): void {
-		this.notificationDetailsValue = [];
-		this.notificationDetailsErrorMessageValue = null;
-		this.notificationDetailsLoadingValue = true;
+	private refreshNotificationDetails(notificationId: string | number): void {
+		this.notificationDetailQuery.invalidateNotificationDetails(notificationId);
+
+		this.withLifecycle(this.notificationDetailQuery.loadNotificationDetails(notificationId)).subscribe({
+			next: (response) => {
+				this.notificationDetailState.setNotificationDetailsFromResponse(response);
+				if (this.notificationDetailState.getState().retryingDeviceId) {
+					this.notificationDetailState.setRetryingDeviceId(null);
+				}
+				this.cdr.markForCheck();
+			},
+			error: () => {
+				this.cdr.markForCheck();
+			},
+		});
 	}
 
-	private updateNotificationDeviceDetail(detailId: number, nextDetail: Partial<NotificationDeviceDetail>): void {
-		this.notificationDetailsValue = this.notificationDetailsValue.map((item) => (item.id === detailId ? { ...item, ...nextDetail } : item));
+	private loadNotifications(forceRefresh = false): void {
+		const currentState = this.notificationsState.getState();
+		const campaignId = currentState.activeCampaignId;
+		if (!campaignId) {
+			return;
+		}
+
+		const filters = currentState.filters;
+		this.notificationsState.setLoading(true);
+		this.notificationsState.setErrorMessage(null);
+
+		this.withLifecycle(this.notificationsQuery.loadNotifications(campaignId, filters, { forceRefresh })).subscribe({
+			next: (page) => {
+				this.notificationsState.setPage(page);
+				this.notificationsState.setLoaded(true);
+				this.notificationsState.setLastFetched(Date.now());
+				this.notificationsState.setLoading(false);
+				this.cdr.markForCheck();
+			},
+			error: () => {
+				this.notificationsState.setLoading(false);
+				this.notificationsState.setErrorMessage('Không thể tải danh sách thông báo.');
+				this.cdr.markForCheck();
+			},
+		});
+	}
+
+	private retryNotificationById(notificationId: string | number): void {
+		const currentState = this.notificationsState.getState();
+		const campaignId = currentState.activeCampaignId;
+		if (!campaignId) {
+			return;
+		}
+
+		const filters = currentState.filters;
+		this.notificationsState.markNotificationPending(notificationId);
+		this.notificationsState.setRetryLoading(true);
+		this.notificationsState.setRetryingNotificationId(notificationId);
+		this.notificationsState.setRetryErrorMessage(null);
+
+		this.withLifecycle(this.notificationsQuery.retryNotification(notificationId, campaignId, filters)).subscribe({
+			next: () => {
+				this.notificationsState.setRetryLoading(false);
+				this.notificationsState.setRetryingNotificationId(null);
+				this.loadNotifications();
+				this.cdr.markForCheck();
+			},
+			error: () => {
+				this.notificationsState.setRetryLoading(false);
+				this.notificationsState.setRetryingNotificationId(null);
+				this.notificationsState.setRetryErrorMessage('Không thể gửi lại thông báo.');
+				this.cdr.markForCheck();
+			},
+		});
 	}
 
 	ngOnDestroy(): void {
 		this.unsubscribeFromSelectedNotificationUpdates();
+		this.unsubscribeFromSelectedNotificationDeviceStatusUpdates();
 	}
 
 	private normalizeNotificationChannel(channel: string): CampaignNotificationFilters['channel'] {
@@ -384,5 +469,12 @@ export class NotificationsController implements OnDestroy {
 			return [];
 		}
 		return channel.split(',').map((item) => item.trim().toUpperCase()).filter((item) => item.length > 0);
+	}
+
+	private withLifecycle<T>(source: Observable<T>): Observable<T> {
+		if (!this.destroyRef) {
+			return source;
+		}
+		return source.pipe(takeUntilDestroyed(this.destroyRef));
 	}
 }

@@ -1,20 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { ApiEngine, ApiRequestOptions } from './api.engine.interface';
 
-import {
-  ApiEngine,
-  ApiRequestOptions,
-} from './api.engine.interface';
+@Injectable({ providedIn: 'root'})
+export class HttpApiEngine implements ApiEngine {
 
-@Injectable({
-  providedIn: 'root',
-})
-export class HttpApiEngine
-  implements ApiEngine {
-
-  private readonly http =
-    inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   get<T>(
     url: string,

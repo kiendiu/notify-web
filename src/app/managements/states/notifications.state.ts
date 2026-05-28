@@ -46,15 +46,50 @@ export class NotificationsStateService implements OnDestroy {
 	}
 
 	setActiveCampaignId(activeCampaignId: string | null): void { this.patch({ activeCampaignId }); }
-	setFilters(filters: CampaignNotificationFilters): void { this.patch({ filters }); }
+
+	resetCampaignFilters(): void { this.patch({ filters: { ...defaultNotificationFilters } }); }
+	
+	setKeyword(keyword: string): void { this.patchFilters({ keyWord: keyword, page: 0 }); }
+
+	setChannel(channel: CampaignNotificationFilters['channel']): void { this.patchFilters({ channel, page: 0 }); }
+
+	setStatus(status: CampaignNotificationFilters['status']): void { this.patchFilters({ status, page: 0 }); }
+
+	setPageIndex(page: number): void { this.patchFilters({ page }); }
+
+	setFiltersToFirstPage(): void { this.patchFilters({ page: 0 }); }
+
 	setPage(page: CampaignNotificationPage): void { this.patch({ page }); }
+
 	setLoading(loading: boolean): void { this.patch({ loading }); }
+
 	setLoaded(loaded: boolean): void { this.patch({ loaded }); }
+
 	setLastFetched(lastFetched: number | null): void { this.patch({ lastFetched }); }
+
 	setErrorMessage(errorMessage: string | null): void { this.patch({ errorMessage }); }
+
 	setRetryLoading(retryLoading: boolean): void { this.patch({ retryLoading }); }
+
 	setRetryingNotificationId(retryingNotificationId: string | number | null): void { this.patch({ retryingNotificationId }); }
+
 	setRetryErrorMessage(retryErrorMessage: string | null): void { this.patch({ retryErrorMessage }); }
+
+	markNotificationPending(notificationId: string | number): void {
+		const currentPage = this.getState().page;
+		const nextItems = currentPage.items.map((item) => (
+			String(item.id) === String(notificationId)
+				? { ...item, status: 'PENDING' }
+				: item
+		));
+
+		if (nextItems === currentPage.items) {
+			return;
+		}
+
+		this.patch({ page: { ...currentPage, items: nextItems } });
+	}
+	clear(): void { this.reset(); }
 
 	reset(): void {
 		this.stateService.set(this.stateKey, createInitialNotificationState());
@@ -70,6 +105,10 @@ export class NotificationsStateService implements OnDestroy {
 			...(current ?? createInitialNotificationState()),
 			...partial,
 		}));
+	}
+
+	private patchFilters(partial: Partial<CampaignNotificationFilters> & { page?: number }): void {
+		this.patch({ filters: { ...this.getState().filters, ...partial } });
 	}
 }
 

@@ -1,16 +1,45 @@
-import { CampaignSearchFilters } from '../../managements/models/campaigns.model';
+import { Injectable, inject } from '@angular/core';
+import { CACHE_ENGINE } from '../../core/stores/cache/cache.engine';
+import { CampaignSearchFilters, CampaignSearchResponse } from '../../managements/models/campaigns.model';
 
 export const CAMPAIGNS_SCOPE = 'campaigns.list';
 export const CAMPAIGNS_TTL_MS = 60 * 1000; // 1 minute
 
-export function buildCampaignsCacheKey(filters: CampaignSearchFilters): string {
-  return `${CAMPAIGNS_SCOPE}:${stableStringify({
-    campaignName: filters.campaignName.trim(),
-    page: filters.page,
-    size: filters.size,
-    sortDirection: filters.sortDirection,
-    status: filters.status,
-  })}`;
+export interface CampaignsCacheRecord<T> {
+  value: T;
+  fetchedAt: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class CampaignsCache {
+  private readonly cacheEngine = inject(CACHE_ENGINE);
+
+  getCampaigns(filters: CampaignSearchFilters): CampaignsCacheRecord<CampaignSearchResponse> | null {
+    const cache = this.cacheEngine.get<CampaignSearchResponse>(this.buildCampaignsCacheKey(filters));
+
+    if (!this.cacheEngine.isFresh(cache, CAMPAIGNS_TTL_MS)) {
+      return null;
+    }
+
+    return {
+      value: cache!.value,
+      fetchedAt: cache!.fetchedAt,
+    };
+  }
+
+  setCampaigns(filters: CampaignSearchFilters, response: CampaignSearchResponse): void {
+    this.cacheEngine.set(this.buildCampaignsCacheKey(filters), response);
+  }
+
+  buildCampaignsCacheKey(filters: CampaignSearchFilters): string {
+    return `${CAMPAIGNS_SCOPE}:${stableStringify({
+      campaignName: filters.campaignName.trim(),
+      page: filters.page,
+      size: filters.size,
+      sortDirection: filters.sortDirection,
+      status: filters.status,
+    })}`;
+  }
 }
 
 function stableStringify(obj: Record<string, unknown>): string {

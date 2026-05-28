@@ -49,7 +49,18 @@ export class CampaignEditorController {
     };
 
     ngOnInit(): void {
-        this.campaignQuery.loadTemplates().subscribe();
+        this.formService.setTemplatesLoading(true);
+        this.formService.setErrorMessage(null);
+
+        this.campaignQuery.loadTemplates().subscribe({
+            next: (templates) => {
+                this.formService.setTemplates(templates);
+            },
+            error: (error: unknown) => {
+                this.formService.setTemplatesLoading(false);
+                this.formService.setErrorMessage(error instanceof Error ? error.message : 'Không thể tải mẫu. Vui lòng thử lại.');
+            },
+        });
     }
 
     setOnCreatedCallback(callback: ((campaign: CampaignCreateResponse) => void) | null): void {
@@ -86,7 +97,18 @@ export class CampaignEditorController {
         this.formService.setSubmitError('');
 
         if (value === 'SPECIFIC') {
-            this.campaignQuery.searchUsers('', 0, 100).subscribe();
+            this.formService.setUserSearchLoading(true);
+            this.formService.setErrorMessage(null);
+
+            this.campaignQuery.searchUsers('', 0, 100).subscribe({
+                next: (response) => {
+                    this.formService.setUsersFromResponse(response);
+                },
+                error: (error: unknown) => {
+                    this.formService.setUserSearchLoading(false);
+                    this.formService.setErrorMessage(error instanceof Error ? error.message : 'Không thể tìm người dùng. Vui lòng thử lại.');
+                },
+            });
             return;
         }
 

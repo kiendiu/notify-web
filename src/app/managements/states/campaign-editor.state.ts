@@ -391,6 +391,36 @@ export class CampaignEditorState
 		this.patch({ userSearch });
 	}
 
+	setTemplates(templates: TemplateDto[]): void {
+		this.patch({
+			templates,
+			templatesLoaded: true,
+			templatesLoading: false,
+			templatesLastFetched: Date.now(),
+		});
+	}
+
+	setTemplatesLoading(loading: boolean): void {
+		this.patch({ templatesLoading: loading });
+	}
+
+	setUsersFromResponse(response: UsersSearchResponse): void {
+		this.patch({
+			users: response.content ?? [],
+			usersLoaded: true,
+			userSearchLoading: false,
+			usersLastFetched: Date.now(),
+		});
+	}
+
+	setUserSearchLoading(loading: boolean): void {
+		this.patch({ userSearchLoading: loading });
+	}
+
+	setErrorMessage(errorMessage: string | null): void {
+		this.patch({ errorMessage });
+	}
+
 	patch(
 		partial: Partial<CampaignEditorStateModel>,
 	): void {

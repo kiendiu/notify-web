@@ -14,15 +14,18 @@ export const clearByPrefixState = createAction('[Engine State] Clear By Prefix',
 
 export const engineStateReducer = createReducer(
   initialState,
+
   on(setKeyState, (state, { key, value }) => ({
     ...state,
     cacheMap: { ...state.cacheMap, [key]: value }
   })),
+
   on(removeKeyState, (state, { key }) => {
     const newCache = { ...state.cacheMap };
     delete newCache[key];
     return { ...state, cacheMap: newCache };
   }),
+  
   on(clearByPrefixState, (state, { prefix }) => {
     const newCache = { ...state.cacheMap };
     Object.keys(newCache).forEach(key => {

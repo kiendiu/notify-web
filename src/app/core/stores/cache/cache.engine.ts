@@ -15,7 +15,6 @@ export interface CacheEngine {
   buildKey(scope: string, params?: Record<string, unknown>): string;
 }
 
-// Token này đại diện cho hệ thống Cache của toàn bộ App
 export const CACHE_ENGINE = new InjectionToken<CacheEngine>('CACHE_ENGINE');
 
 export function provideCacheEngine(implementation: Type<CacheEngine>): Provider {

@@ -1,17 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, firstValueFrom, map, of, tap } from 'rxjs';
-import { ApiConstant } from '../../core/constants/api.constant';
+import { Endpoint } from '../../core/constants/endpoint';
 import { TokenVaultService } from '../../core/auth/services/token-vault.service';
 import { AuthPayload, AuthResponse } from '../../managements/models/auth.model';
 import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
 
-@Injectable({
-	providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
 	private readonly apiEngine = inject(API_ENGINE);
 	private readonly tokenVault = inject(TokenVaultService);
-
 	private readonly authState$ = new BehaviorSubject(false);
 
 	constructor() {
@@ -21,7 +18,7 @@ export class AuthService {
 	}
 
 	login(payload: AuthPayload): Observable<AuthResponse> {
-		return this.apiEngine.post<AuthResponse>(ApiConstant.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
+		return this.apiEngine.post<AuthResponse>(Endpoint.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
 			tap((response) => {
 				this.setSession(response.accessToken);
 			}),
@@ -30,7 +27,7 @@ export class AuthService {
 
 	logout(): void {
 		this.clearSession();
-		this.apiEngine.post<void>(ApiConstant.AUTH.LOGOUT, {}, { withCredentials: true }).pipe(
+		this.apiEngine.post<void>(Endpoint.AUTH.LOGOUT, {}, { withCredentials: true }).pipe(
 			catchError(() => of(void 0)),
 		).subscribe();
 	}
@@ -44,7 +41,7 @@ export class AuthService {
 	}
 
 	refreshAccessToken(): Observable<AuthResponse> {
-		return this.apiEngine.post<AuthResponse>(ApiConstant.AUTH.REFRESH_TOKEN, {}, { withCredentials: true }).pipe(
+		return this.apiEngine.post<AuthResponse>(Endpoint.AUTH.REFRESH_TOKEN, {}, { withCredentials: true }).pipe(
 			tap((response) => this.setSession(response.accessToken)),
 		);
 	}
