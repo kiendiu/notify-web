@@ -8,8 +8,11 @@ import { CampaignEditorQuery } from '../../managements/queries/campaign-editor.q
 import { CampaignsStateService, initialCampaignState } from '../../managements/states/campaigns.state';
 import { CampaignEditorState } from '../../managements/states/campaign-editor.state';
 import { NotificationWsService } from '../../core/websocket/notification-ws.service';
+import { StoreSyncEnvelope, StoreSyncService } from '../../core/sync/store-sync.service';
 import { CampaignEditorComponent } from './campaign-editor/campaign-editor.component';
 import { NotificationsComponent } from './notifications/notifications.component';
+
+const CAMPAIGNS_SYNC_RELOAD_ACTION = '[Campaigns] Reload List';
 
 @Injectable()
 export class CampaignsController {
@@ -18,6 +21,7 @@ export class CampaignsController {
 	private readonly campaignsState = inject(CampaignsStateService);
 	private readonly searchService = inject(SearchService);
 	private readonly websocket = inject(NotificationWsService);
+	private readonly storeSyncService = inject(StoreSyncService);
 	private readonly cdr = inject(ChangeDetectorRef);
 	readonly formService = inject(CampaignEditorState);
 
@@ -46,6 +50,10 @@ export class CampaignsController {
 	};
 
 	readonly handleCampaignCreated = (campaign: CampaignCreateResponse): void => {
+		this.reloadCampaignsFromRealtimeSync();
+		this.storeSyncService.publish({
+			type: CAMPAIGNS_SYNC_RELOAD_ACTION,
+		});
 		this.openCampaignNotifications(campaign);
 	};
 
@@ -54,6 +62,7 @@ export class CampaignsController {
 		this.selectedCampaignValue = null;
 		this.clearPreview();
 		this.connectRealtime(destroyRef);
+		this.connectMultiTabSync(destroyRef);
 
 		this.campaignsState.state$.pipe(takeUntilDestroyed(destroyRef)).subscribe((state) => {
 			this.campaignStateValue = state ?? initialCampaignState;
@@ -205,12 +214,12 @@ export class CampaignsController {
 		return channel.split(',').map((item) => item.trim().toUpperCase()).filter((item) => item.length > 0);
 	}
 
-	private loadCampaigns(): void {
+	private loadCampaigns(forceRefresh = false): void {
 		const filters = this.campaignsState.getState().filters;
 		this.campaignsState.setLoading(true);
 		this.campaignsState.setErrorMessage(null);
 
-		this.campaignsQuery.loadCampaigns(filters).subscribe({
+		this.campaignsQuery.loadCampaigns(filters, { forceRefresh }).subscribe({
 			next: (result) => {
 				const page = normalizeCampaignPage(result.value);
 				this.campaignsState.setPage(page);
@@ -246,8 +255,23 @@ export class CampaignsController {
 
 	private connectRealtime(destroyRef: DestroyRef): void {
 		this.websocket.watchCampaigns().pipe(takeUntilDestroyed(destroyRef)).subscribe(() => {
-			this.loadCampaigns();
+			this.reloadCampaignsFromRealtimeSync();
 		});
+	}
+
+	private connectMultiTabSync(destroyRef: DestroyRef): void {
+		this.storeSyncService.messages$.pipe(takeUntilDestroyed(destroyRef)).subscribe((envelope: StoreSyncEnvelope) => {
+			if (envelope.action.type !== CAMPAIGNS_SYNC_RELOAD_ACTION) {
+				return;
+			}
+
+			this.reloadCampaignsFromRealtimeSync();
+		});
+	}
+
+	private reloadCampaignsFromRealtimeSync(): void {
+		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page: 0 });
+		this.loadCampaigns(true);
 	}
 
 	private normalizeStatus(status: string): CampaignStatusFilter {

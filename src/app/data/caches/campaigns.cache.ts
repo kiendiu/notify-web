@@ -31,6 +31,10 @@ export class CampaignsCache {
     this.cacheEngine.set(this.buildCampaignsCacheKey(filters), response);
   }
 
+  clearCampaigns(): void {
+    this.cacheEngine.clearByPrefix(CAMPAIGNS_SCOPE);
+  }
+
   buildCampaignsCacheKey(filters: CampaignSearchFilters): string {
     return `${CAMPAIGNS_SCOPE}:${stableStringify({
       campaignName: filters.campaignName.trim(),

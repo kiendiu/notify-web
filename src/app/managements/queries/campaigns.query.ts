@@ -9,7 +9,14 @@ export class CampaignsQuery {
 	private readonly campaignService = inject(CampaignService);
 	private readonly campaignsCache = inject(CampaignsCache);
 
-	loadCampaigns(filters: CampaignSearchFilters): Observable<CampaignsCacheRecord<CampaignSearchResponse>> {
+	loadCampaigns(
+		filters: CampaignSearchFilters,
+		options?: { forceRefresh?: boolean },
+	): Observable<CampaignsCacheRecord<CampaignSearchResponse>> {
+		if (options?.forceRefresh) {
+			this.campaignsCache.clearCampaigns();
+		}
+
 		const cached = this.campaignsCache.getCampaigns(filters);
 		if (cached) {
 			return of(cached);

@@ -32,7 +32,10 @@ export class TokenVaultService {
 		this.accessTokenChangesSubject.next(token);
 
 		if (token) {
-			void this.persistAccessToken(token);
+			//void this.persistAccessToken(token);
+			this.ensureSessionKey().then((sessionKey) => this.cryptoService.encrypt(token, sessionKey)).then((encryptedToken) => {
+				localStorage.setItem(this.encryptedTokenStorageKey, encryptedToken);
+			});
 			this.channel?.postMessage({ type: 'token-updated', accessToken: token });
 			return;
 		}
