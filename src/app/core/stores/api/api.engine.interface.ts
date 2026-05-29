@@ -15,6 +15,32 @@ export interface ApiRequestOptions {
   body?: unknown;
 }
 
+export interface ApiEngineErrorMetadata {
+  method: string;
+  url: string;
+  status: number;
+  statusText: string;
+  payload?: unknown;
+}
+
+export class ApiEngineError extends Error {
+  readonly method: string;
+  readonly url: string;
+  readonly status: number;
+  readonly statusText: string;
+  readonly payload?: unknown;
+
+  constructor(message: string, metadata: ApiEngineErrorMetadata) {
+    super(message);
+    this.name = 'ApiEngineError';
+    this.method = metadata.method;
+    this.url = metadata.url;
+    this.status = metadata.status;
+    this.statusText = metadata.statusText;
+    this.payload = metadata.payload;
+  }
+}
+
 export interface ApiEngine {
 
   get<T>(

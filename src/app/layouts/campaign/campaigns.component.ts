@@ -27,6 +27,7 @@ import { NotificationDetailQuery } from '../../managements/queries/notification-
 import { NotificationDetailStateService } from '../../managements/states/notification-detail.state';
 import { NotificationDetailService } from '../../data/services/notification-detail.service';
 import { NotificationDetailCache } from '../../data/caches/notification-detail.cache';
+import { OptionCachePolicy } from '../../managements/policy/cache-policy';
 
 const CAMPAIGNS_SYNC_RELOAD_ACTION = '[Campaigns] Reload List';
 
@@ -99,7 +100,7 @@ export class CampaignsComponent implements OnInit {
 
 		this.searchService.getSearch().pipe(debounceTime(250), takeUntilDestroyed(this.destroyRef)).subscribe((keyword) => {
 			this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, campaignName: keyword ?? '', page: 0 });
-			this.loadCampaigns();
+			this.loadCampaigns('network-first');
 		});
 	}
 
@@ -144,7 +145,7 @@ export class CampaignsComponent implements OnInit {
 			return;
 		}
 		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page });
-		this.loadCampaigns();
+		this.loadCampaigns('network-first');
 	}
 
 	showCampaignNotifications(campaign: CampaignSummary): void {
@@ -246,12 +247,12 @@ export class CampaignsComponent implements OnInit {
 		}).join(', ');
 	}
 
-	private loadCampaigns(forceRefresh = false): void {
+	private loadCampaigns(optionCachePolicy: OptionCachePolicy = 'network-first'): void {
 		const filters = this.campaignsState.getState().filters;
 		this.campaignsState.setLoading(true);
 		this.campaignsState.setErrorMessage(null);
 
-		this.campaignsQuery.loadCampaigns(filters, { forceRefresh }).subscribe({
+		this.campaignsQuery.loadCampaigns(filters, optionCachePolicy).subscribe({
 			next: (result) => {
 				const page = normalizeCampaignPage(result.value);
 				this.campaignsState.setPage(page);
@@ -259,9 +260,9 @@ export class CampaignsComponent implements OnInit {
 				this.campaignsState.setLastFetched(result.fetchedAt);
 				this.campaignsState.setLoading(false);
 			},
-			error: () => {
+			error: (error: unknown) => {
 				this.campaignsState.setLoading(false);
-				this.campaignsState.setErrorMessage('Không thể tải danh sách chiến dịch.');
+				this.campaignsState.setErrorMessage(error instanceof Error ? error.message : 'Không thể tải danh sách chiến dịch.');
 			},
 		});
 	}
@@ -303,7 +304,7 @@ export class CampaignsComponent implements OnInit {
 
 	private reloadCampaignsFromRealtimeSync(): void {
 		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page: 0 });
-		this.loadCampaigns(true);
+		this.loadCampaigns('network-first');
 	}
 
 	private normalizeStatus(status: string): CampaignStatusFilter {

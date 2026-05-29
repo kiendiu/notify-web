@@ -20,7 +20,7 @@ export class CampaignService {
 		});
 	}
 
-	createCampaign(request: CampaignCreateRequest): Observable<CampaignCreateResponse> {
-		return this.apiEngine.post<CampaignCreateResponse>(Endpoint.CAMPAIGNS.CREATE, request);
-	}
+	// createCampaign(request: CampaignCreateRequest): Observable<CampaignCreateResponse> {
+	// 	return this.apiEngine.post<CampaignCreateResponse>(Endpoint.CAMPAIGNS.CREATE, request);
+	// }
 }
