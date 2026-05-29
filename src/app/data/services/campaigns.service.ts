@@ -1,12 +1,13 @@
-import { Injectable, inject } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Endpoint } from '../../core/constants/endpoint';
-import { CampaignCreateRequest, CampaignCreateResponse, CampaignSearchFilters, CampaignSearchResponse } from '../../managements/models/campaigns.model';
-import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
+import { CampaignCreateRequest, CampaignCreateResponse, CampaignSearchResponse } from '../../managements/dtos/campaigns.dto';
+import { CampaignSearchFilters } from '../../managements/params/campaigns.params';
+import { API_ENGINE, ApiEngine } from '../../core/stores/api/api.engine.interface';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class CampaignService {
-	private readonly apiEngine = inject(API_ENGINE);
+	constructor(@Inject(API_ENGINE) private readonly apiEngine: ApiEngine) {}
 	searchCampaigns(filters: CampaignSearchFilters): Observable<CampaignSearchResponse> {
 		return this.apiEngine.get<CampaignSearchResponse>(Endpoint.CAMPAIGNS.SEARCH, {
 			params: {

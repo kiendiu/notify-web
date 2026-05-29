@@ -11,7 +11,7 @@ import {
 } from './websocket.models';
 import { WS_TOPICS } from './websocket-topics.constants';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class NotificationWsService implements OnDestroy {
   private readonly rxStomp = new RxStomp();
   private hasActivated = false;

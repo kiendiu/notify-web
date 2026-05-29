@@ -1,35 +1,40 @@
-import { Injectable, inject } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, firstValueFrom, map, of, tap } from 'rxjs';
 import { Endpoint } from '../../core/constants/endpoint';
 import { TokenVaultService } from '../../core/auth/services/token-vault.service';
-import { AuthPayload, AuthResponse } from '../../managements/models/auth.model';
-import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
+import { AuthPayload } from '../../managements/dtos/auth-request.dto';
+import { AuthResponse } from '../../managements/dtos/auth-response.dto';
+import { API_ENGINE, ApiEngine } from '../../core/stores/api/api.engine.interface';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-	private readonly apiEngine = inject(API_ENGINE);
-	private readonly tokenVault = inject(TokenVaultService);
-	private readonly authState$ = new BehaviorSubject(false);
-
-	constructor() {
+	constructor(
+		@Inject(API_ENGINE) private readonly apiEngine: ApiEngine,
+		private readonly tokenVault: TokenVaultService,
+	) {
 		this.tokenVault.accessTokenChanges$.subscribe((token) => {
+			this.currentAccessToken = token;
 			this.authState$.next(Boolean(token));
 		});
 	}
+	private readonly authState$ = new BehaviorSubject(false);
+	private currentAccessToken: string | null = null;
 
 	login(payload: AuthPayload): Observable<AuthResponse> {
 		return this.apiEngine.post<AuthResponse>(Endpoint.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
 			tap((response) => {
-				this.setSession(response.accessToken);
+				this.setSession(response.accessToken, response.refreshToken ?? null, response.tokenType ?? null);
 			}),
 		);
 	}
 
-	logout(): void {
+	async logout(): Promise<void> {
 		this.clearSession();
-		this.apiEngine.post<void>(Endpoint.AUTH.LOGOUT, {}, { withCredentials: true }).pipe(
-			catchError(() => of(void 0)),
-		).subscribe();
+		await firstValueFrom(
+			this.apiEngine.post<void>(Endpoint.AUTH.LOGOUT, {}, { withCredentials: true }).pipe(
+				catchError(() => of(void 0)),
+			),
+		);
 	}
 
 	isAuthenticated(): boolean {
@@ -37,47 +42,46 @@ export class AuthService {
 	}
 
 	getAccessToken(): string | null {
-		return this.tokenVault.getAccessToken();
+		return this.currentAccessToken;
 	}
 
 	refreshAccessToken(): Observable<AuthResponse> {
 		return this.apiEngine.post<AuthResponse>(Endpoint.AUTH.REFRESH_TOKEN, {}, { withCredentials: true }).pipe(
-			tap((response) => this.setSession(response.accessToken)),
+			tap((response) => this.setSession(response.accessToken, response.refreshToken ?? null, response.tokenType ?? null)),
 		);
 	}
 
-	bootstrapSession(): Promise<void> {
-		return this.tokenVault.requestAccessToken().then((sharedToken) => {
-			if (sharedToken) {
-				this.setSession(sharedToken);
-				return;
-			}
+	async bootstrapSession(): Promise<void> {
+		const sharedToken = await this.tokenVault.requestAccessToken();
+		if (sharedToken) {
+			this.tokenVault.setAccessToken(sharedToken);
+			return;
+		}
 
-			return this.tokenVault.restorePersistedAccessToken().then((persistedToken) => {
-				if (persistedToken) {
-					this.setSession(persistedToken);
-					return;
-				}
+		const persistedToken = await this.tokenVault.restorePersistedAccessToken();
+		if (persistedToken) {
+			return;
+		}
 
-				return firstValueFrom(
-					this.refreshAccessToken().pipe(
-						map(() => void 0),
-						catchError(() => {
-							this.clearSession();
-							return of(void 0);
-						}),
-					),
-				);
-			});
-		});
+		await firstValueFrom(
+			this.refreshAccessToken().pipe(
+				map(() => void 0),
+				catchError(() => {
+					this.clearSession();
+					return of(void 0);
+				}),
+			),
+		);
 	}
 
-	private setSession(accessToken: string): void {
-		this.tokenVault.setAccessToken(accessToken);
+	private setSession(accessToken: string, refreshToken: string | null, tokenType: string | null): void {
+		this.currentAccessToken = accessToken;
+		this.tokenVault.setTokens(accessToken, refreshToken, tokenType);
 		this.clearLegacyAuthStorage();
 	}
 
 	private clearSession(): void {
+		this.currentAccessToken = null;
 		this.tokenVault.clear();
 		this.clearLegacyAuthStorage();
 	}

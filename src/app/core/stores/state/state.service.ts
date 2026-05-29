@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { StateEngine } from './state.engine';
@@ -6,14 +6,12 @@ import { EngineState, setKeyState, removeKeyState, clearByPrefixState } from './
 
 @Injectable({ providedIn: 'root' })
 export class StateService implements StateEngine {
-  private readonly store = inject(Store<{ engineState: EngineState }>);
-  private currentMap: Record<string, unknown> = {};
-
-  constructor() {
+  constructor(private readonly store: Store<{ engineState: EngineState }>) {
     this.store.select(state => state.engineState?.cacheMap).subscribe(map => {
       if (map) this.currentMap = map;
     });
   }
+  private currentMap: Record<string, unknown> = {};
 
   get<T>(key: string): T | null {
     return (this.currentMap[key] as T) ?? null;

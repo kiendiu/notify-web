@@ -1,12 +1,11 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiEngine, ApiRequestOptions } from './api.engine.interface';
 
 @Injectable({ providedIn: 'root'})
 export class HttpApiEngine implements ApiEngine {
-
-  private readonly http = inject(HttpClient);
+  constructor(private readonly http: HttpClient) {}
 
   get<T>(
     url: string,

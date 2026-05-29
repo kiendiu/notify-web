@@ -1,13 +1,16 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, map, of } from 'rxjs';
 import { CampaignService } from '../../data/services/campaigns.service';
-import { CampaignSearchFilters, CampaignSearchResponse } from '../models/campaigns.model';
+import { CampaignSearchFilters } from '../params/campaigns.params';
+import { CampaignSearchResponse } from '../dtos/campaigns.dto';
 import { CampaignsCache, CampaignsCacheRecord } from '../../data/caches/campaigns.cache';
 
 @Injectable()
 export class CampaignsQuery {
-	private readonly campaignService = inject(CampaignService);
-	private readonly campaignsCache = inject(CampaignsCache);
+	constructor(
+		private readonly campaignService: CampaignService,
+		private readonly campaignsCache: CampaignsCache,
+	) {}
 
 	loadCampaigns(
 		filters: CampaignSearchFilters,

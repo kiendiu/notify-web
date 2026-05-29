@@ -1,13 +1,15 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, of, map } from 'rxjs';
 import { NotificationDetailService } from '../../data/services/notification-detail.service';
-import { NotificationDetailsResponse } from '../models/notifications.model';
+import { NotificationDetailsResponse } from '../dtos/notifications.dto';
 import { NotificationDetailCache } from '../../data/caches/notification-detail.cache';
 
 @Injectable()
 export class NotificationDetailQuery {
-	private readonly notificationDetailService = inject(NotificationDetailService);
-	private readonly notificationDetailCache = inject(NotificationDetailCache);
+	constructor(
+		private readonly notificationDetailService: NotificationDetailService,
+		private readonly notificationDetailCache: NotificationDetailCache,
+	) {}
 
 	loadNotificationDetails(notificationId: string | number): Observable<NotificationDetailsResponse> {
 		const cachedDetails = this.notificationDetailCache.getNotificationDetails(notificationId);

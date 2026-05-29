@@ -1,13 +1,17 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, map, of, tap } from 'rxjs';
 import { NotificationService } from '../../data/services/notifications.service';
-import { CampaignNotificationFilters, CampaignNotificationPage, normalizeNotificationPage } from '../models/notifications.model';
+import { CampaignNotificationFilters } from '../params/notifications.params';
+import { CampaignNotificationPage } from '../models/notifications.model';
+import { normalizeNotificationPage } from '../mappers/notifications.mapper';
 import { NotificationsCache } from '../../data/caches/notifications.cache';
 
 @Injectable()
 export class NotificationsQuery {
-	private readonly notificationService = inject(NotificationService);
-	private readonly notificationsCache = inject(NotificationsCache);
+	constructor(
+		private readonly notificationService: NotificationService,
+		private readonly notificationsCache: NotificationsCache,
+	) {}
 
 	loadNotifications(
 		campaignId: string | number,

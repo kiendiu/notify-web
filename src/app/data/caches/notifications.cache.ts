@@ -1,13 +1,14 @@
-import { Injectable, inject } from '@angular/core';
-import { CACHE_ENGINE } from '../../core/stores/cache/cache.engine';
-import { CampaignNotificationFilters, CampaignNotificationSearchResponse } from '../../managements/models/notifications.model';
+import { Inject, Injectable } from '@angular/core';
+import { CACHE_ENGINE, CacheEngine } from '../../core/stores/cache/cache.engine';
+import { CampaignNotificationFilters } from '../../managements/params/notifications.params';
+import { CampaignNotificationSearchResponse } from '../../managements/dtos/notifications.dto';
 
 export const NOTIFICATIONS_SCOPE = 'notifications.list';
 export const NOTIFICATIONS_TTL_MS = 30 * 1000; // 30 seconds
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class NotificationsCache {
-  private readonly cacheEngine = inject(CACHE_ENGINE);
+  constructor(@Inject(CACHE_ENGINE) private readonly cacheEngine: CacheEngine) {}
 
   getCampaignNotifications(
     campaignId: string | number,

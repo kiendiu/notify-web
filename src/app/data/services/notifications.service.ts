@@ -1,13 +1,14 @@
-import { Injectable, inject } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { Endpoint } from '../../core/constants/endpoint';
-import { CampaignNotificationFilters, CampaignNotificationSearchResponse, NotificationDetailsResponse } from '../../managements/models/notifications.model';
+import { CampaignNotificationFilters } from '../../managements/params/notifications.params';
+import { CampaignNotificationSearchResponse, NotificationDetailsResponse } from '../../managements/dtos/notifications.dto';
 import { ActivitySocketEvent } from '../../core/websocket/websocket.models';
-import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
+import { API_ENGINE, ApiEngine } from '../../core/stores/api/api.engine.interface';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class NotificationService {
-	private readonly apiEngine = inject(API_ENGINE);
+	constructor(@Inject(API_ENGINE) private readonly apiEngine: ApiEngine) {}
 
 	getCampaignNotifications(
 		campaignId: string | number,

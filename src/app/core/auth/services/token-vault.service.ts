@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { CryptoService } from './crypto.service';
 
@@ -11,30 +11,30 @@ type TokenVaultMessage =
 @Injectable({ providedIn: 'root' })
 export class TokenVaultService {
 	private readonly channelName = 'kien-notify-web:auth';
-	private readonly encryptedTokenStorageKey = 'kien-notify-web:auth:encrypted-access-token';
-	private readonly encryptionKeyStorageKey = 'kien-notify-web:auth:crypto-key';
-	private readonly cryptoService = inject(CryptoService);
+	private readonly encryptedTokenStorageKey = 'knw_auth_access';
+	private readonly encryptedRefreshStorageKey = 'knw_auth_refresh';
+	private readonly encryptionKeyStorageKey = 'knw_auth_key';
+	private readonly tokenTypeStorageKey = 'knw_auth_type';
+	constructor(private readonly cryptoService: CryptoService) {
+		this.channel?.addEventListener('message', (event: MessageEvent<TokenVaultMessage>) => {
+			this.handleMessage(event.data);
+		});
+	}
 	private accessToken: string | null = null;
+	private refreshToken: string | null = null;
 	private readonly accessTokenChangesSubject = new BehaviorSubject<string | null>(null);
 	private readonly pendingRequests = new Map<string, (token: string | null) => void>();
 	private readonly channel: BroadcastChannel | null = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(this.channelName);
 
 	readonly accessTokenChanges$: Observable<string | null> = this.accessTokenChangesSubject.asObservable();
 
-	constructor() {
-		this.channel?.addEventListener('message', (event: MessageEvent<TokenVaultMessage>) => {
-			this.handleMessage(event.data);
-		});
-	}
-
 	setAccessToken(token: string | null): void {
 		this.accessToken = token;
 		this.accessTokenChangesSubject.next(token);
 
 		if (token) {
-			//void this.persistAccessToken(token);
 			this.ensureSessionKey().then((sessionKey) => this.cryptoService.encrypt(token, sessionKey)).then((encryptedToken) => {
-				localStorage.setItem(this.encryptedTokenStorageKey, encryptedToken);
+				this.setCookie(this.encryptedTokenStorageKey, encryptedToken, 7);
 			});
 			this.channel?.postMessage({ type: 'token-updated', accessToken: token });
 			return;
@@ -43,8 +43,34 @@ export class TokenVaultService {
 		this.clearPersistedToken();
 	}
 
+	setRefreshToken(token: string | null): void {
+		this.refreshToken = token;
+		if (token) {
+			this.ensureSessionKey().then((sessionKey) => this.cryptoService.encrypt(token, sessionKey)).then((encryptedToken) => {
+				this.setCookie(this.encryptedRefreshStorageKey, encryptedToken, 30);
+			});
+			return;
+		}
+
+		this.deleteCookie(this.encryptedRefreshStorageKey);
+	}
+
+	setTokens(accessToken: string | null, refreshToken: string | null, tokenType?: string | null): void {
+		this.setAccessToken(accessToken);
+		this.setRefreshToken(refreshToken);
+		if (tokenType) {
+			this.setCookie(this.tokenTypeStorageKey, tokenType, 30);
+		} else {
+			this.deleteCookie(this.tokenTypeStorageKey);
+		}
+	}
+
 	getAccessToken(): string | null {
 		return this.accessToken;
+	}
+
+	getRefreshToken(): string | null {
+		return this.refreshToken;
 	}
 
 	requestAccessToken(timeoutMs = 250): Promise<string | null> {
@@ -81,8 +107,9 @@ export class TokenVaultService {
 	}
 
 	restorePersistedAccessToken(): Promise<string | null> {
-		const encryptedToken = localStorage.getItem(this.encryptedTokenStorageKey);
-		if (!encryptedToken) {
+		const encryptedToken = this.getCookie(this.encryptedTokenStorageKey);
+		const encryptedRefresh = this.getCookie(this.encryptedRefreshStorageKey);
+		if (!encryptedToken && !encryptedRefresh) {
 			return Promise.resolve(null);
 		}
 
@@ -91,13 +118,25 @@ export class TokenVaultService {
 			return Promise.resolve(null);
 		}
 
-		return this.cryptoService.decrypt(encryptedToken, sessionKey).then((token) => {
-			this.setAccessToken(token);
-			return token;
-		}).catch(() => {
-			this.clearPersistedToken();
-			return null;
-		});
+		const promises: Promise<void>[] = [];
+
+		if (encryptedToken) {
+			promises.push(this.cryptoService.decrypt(encryptedToken, sessionKey).then((token) => {
+				this.setAccessToken(token);
+			}).catch(() => {
+				this.deleteCookie(this.encryptedTokenStorageKey);
+			}));
+		}
+
+		if (encryptedRefresh) {
+			promises.push(this.cryptoService.decrypt(encryptedRefresh, sessionKey).then((token) => {
+				this.refreshToken = token;
+			}).catch(() => {
+				this.deleteCookie(this.encryptedRefreshStorageKey);
+			}));
+		}
+
+		return Promise.all(promises).then(() => this.accessToken);
 	}
 
 	close(): void {
@@ -152,17 +191,19 @@ export class TokenVaultService {
 
 	private persistAccessToken(token: string): Promise<void> {
 		return this.ensureSessionKey().then((sessionKey) => this.cryptoService.encrypt(token, sessionKey)).then((encryptedToken) => {
-			localStorage.setItem(this.encryptedTokenStorageKey, encryptedToken);
+			this.setCookie(this.encryptedTokenStorageKey, encryptedToken, 7);
 		});
 	}
 
 	private clearPersistedToken(): void {
-		localStorage.removeItem(this.encryptedTokenStorageKey);
-		localStorage.removeItem(this.encryptionKeyStorageKey);
+		this.deleteCookie(this.encryptedTokenStorageKey);
+		this.deleteCookie(this.encryptedRefreshStorageKey);
+		this.deleteCookie(this.tokenTypeStorageKey);
+		this.deleteCookie(this.encryptionKeyStorageKey);
 	}
 
 	private getSessionKey(): string | null {
-		return localStorage.getItem(this.encryptionKeyStorageKey);
+		return this.getCookie(this.encryptionKeyStorageKey);
 	}
 
 	private ensureSessionKey(): Promise<string> {
@@ -172,8 +213,24 @@ export class TokenVaultService {
 		}
 
 		return this.cryptoService.createAesKey().then((sessionKey) => {
-			localStorage.setItem(this.encryptionKeyStorageKey, sessionKey);
+			this.setCookie(this.encryptionKeyStorageKey, sessionKey, 30);
 			return sessionKey;
 		});
+	}
+
+	// Cookie helpers
+	private setCookie(name: string, value: string, days = 7): void {
+		const expires = new Date(Date.now() + days * 864e5).toUTCString();
+		document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${expires}; path=/; Secure; SameSite=Lax`;
+	}
+
+	private getCookie(name: string): string | null {
+		const match = document.cookie.split('; ').find((row) => row.startsWith(`${encodeURIComponent(name)}=`));
+		if (!match) return null;
+		return decodeURIComponent(match.split('=')[1] || '');
+	}
+
+	private deleteCookie(name: string): void {
+		document.cookie = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; Secure; SameSite=Lax`;
 	}
 }

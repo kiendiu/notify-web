@@ -1,10 +1,4 @@
-export interface AuthResponse {
-	accessToken: string;
-}
-
-export interface AuthPayload {
-	idToken: string;
-	fcmToken: string;
+export interface AuthDeviceInfo {
 	deviceId: string;
 	deviceType: string;
 	deviceName: string;

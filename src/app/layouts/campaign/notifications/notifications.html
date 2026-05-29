@@ -86,6 +86,6 @@
   }
 
   @if (showNotificationDetailsPanel()) {
-    <app-notification-detail [selectedNotification]="selectedNotification()" [notificationDetails]="notificationDetails()" [notificationDetailsLoading]="notificationDetailsLoading()" [notificationDetailsErrorMessage]="notificationDetailsErrorMessage()" [retryLoading]="isRetryingNotification(selectedNotification()?.id)" [retryError]="retryError()" [retryingDeviceId]="retryingDeviceId()" (close)="closeNotificationDetailsPanel()" (retry)="retryNotification()" (retryDevice)="retryNotificationFromDevice($event)" />
+    <div #notificationDetailHost></div>
   }
 </div>

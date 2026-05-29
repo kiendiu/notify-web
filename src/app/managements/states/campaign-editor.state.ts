@@ -1,25 +1,19 @@
 import {
 	Injectable,
 	OnDestroy,
-	inject,
 } from '@angular/core';
 
 import { map } from 'rxjs';
 
 import {
 	CampaignChannel,
-	CampaignCreateRequest,
-	CampaignCreateResponse,
 	CampaignTargetType,
 } from '../models/campaigns.model';
 
-import { StateService } from '../../core/stores/state/state.service';
+import { CampaignCreateRequest, CampaignCreateResponse } from '../dtos/campaigns.dto';
+import { TemplateDto, UserDto, UsersSearchResponse } from '../dtos/campaign-editor.dto';
 
-export interface TemplateDto {
-	templateName: string;
-	subject: string;
-	content: string;
-}
+import { StateService } from '../../core/stores/state/state.service';
 
 export interface TemplatePreviewDto {
 	templateName: string;
@@ -35,23 +29,6 @@ export interface PushPreview {
 export interface EmailPreview {
 	subject: string;
 	content: string;
-}
-
-export interface UserDto {
-	id: number;
-	name: string;
-	email: string;
-	status?: string;
-}
-
-export interface UsersSearchResponse {
-	content: UserDto[];
-	number: number;
-	size: number;
-	totalElements: number;
-	totalPages: number;
-	last: boolean;
-	first: boolean;
 }
 
 export interface CampaignEditorStateModel {
@@ -155,23 +132,12 @@ export class CampaignEditorState
 	private readonly stateKey =
 		'kien-notify-web:state:campaign-editor';
 
-	private readonly stateService =
-		inject(StateService);
+	readonly state$;
 
-	readonly state$ =
-		this.stateService
-			.watch<CampaignEditorStateModel>(
-				this.stateKey,
-			)
-			.pipe(
-				map(
-					(state) =>
-						state ??
-						initialCampaignEditorState,
-				),
-			);
-
-	constructor() {
+	constructor(private readonly stateService: StateService) {
+		this.state$ = this.stateService
+			.watch<CampaignEditorStateModel>(this.stateKey)
+			.pipe(map((state) => state ?? initialCampaignEditorState));
 		const current =
 			this.stateService.get<CampaignEditorStateModel>(
 				this.stateKey,

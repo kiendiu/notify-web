@@ -1,55 +1,81 @@
-import { Component, AfterViewInit, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, AfterViewInit, ChangeDetectorRef, DestroyRef, OnInit, Type } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DashboardController } from './dashboard.controller';
-import { CampaignsComponent } from '../campaign/campaigns.component';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AuthService } from '../../data/services/auth.service';
 import { SearchService } from '../../data/services/search.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, CampaignsComponent],
-  providers: [DashboardController, SearchService],
+  imports: [CommonModule],
+  providers: [SearchService],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
 export class DashboardComponent implements OnInit, AfterViewInit {
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly dashboardController = inject(DashboardController);
+  constructor(
+    private readonly destroyRef: DestroyRef,
+    private readonly cdr: ChangeDetectorRef,
+    private readonly authService: AuthService,
+    private readonly router: Router,
+    private readonly searchService: SearchService,
+  ) {}
 
-  readonly currentTab = this.dashboardController.currentTab;
-  readonly showLogoutModal = this.dashboardController.showLogoutModal;
-  readonly headerSearch = this.dashboardController.headerSearch;
+  private currentTabValue: 'campaigns' = 'campaigns';
+  private showLogoutModalValue = false;
+  private headerSearchValue = '';
+
+  campaignsComponent: Type<unknown> | null = null;
+
+  readonly currentTab = () => this.currentTabValue;
+  readonly showLogoutModal = () => this.showLogoutModalValue;
+  readonly headerSearch = () => this.headerSearchValue;
 
   ngOnInit(): void {
-    this.dashboardController.init(this.destroyRef);
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    void import('../campaign/campaigns.component').then((module) => {
+      this.campaignsComponent = module.CampaignsComponent;
+      this.cdr.markForCheck();
+    });
+
+    this.searchService.getSearch().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((keyword) => {
+      this.headerSearchValue = keyword ?? '';
+    });
   }
 
   ngAfterViewInit(): void {
-    this.dashboardController.selectTab('campaigns');
+    this.selectTab('campaigns');
   }
 
   selectTab(tab: 'campaigns'): void {
-    this.dashboardController.selectTab(tab);
+    this.currentTabValue = tab;
   }
 
   goHome(): void {
-    this.dashboardController.goHome();
+    this.selectTab('campaigns');
   }
 
   openLogoutModal(): void {
-    this.dashboardController.openLogoutModal();
+    this.showLogoutModalValue = true;
   }
 
   closeLogoutModal(): void {
-    this.dashboardController.closeLogoutModal();
+    this.showLogoutModalValue = false;
   }
 
   logout(): void {
-    this.dashboardController.logout();
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   onHeaderSearch(keyword: string): void {
-    this.dashboardController.onHeaderSearch(keyword);
+    this.headerSearchValue = keyword ?? '';
+    this.searchService.setSearch(keyword ?? '');
   }
 
   private formatActivityTime(timestamp: number): string {

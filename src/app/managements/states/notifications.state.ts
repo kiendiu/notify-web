@@ -1,7 +1,8 @@
-import { Injectable, OnDestroy, inject } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { map } from 'rxjs';
 import { StateService } from '../../core/stores/state/state.service';
-import { CampaignNotificationFilters, CampaignNotificationPage, defaultNotificationFilters, defaultNotificationPage } from '../models/notifications.model';
+import { CampaignNotificationPage } from '../models/notifications.model';
+import { CampaignNotificationFilters, defaultNotificationFilters } from '../params/notifications.params';
 
 export interface NotificationState {
 	activeCampaignId: string | null;
@@ -19,7 +20,15 @@ export interface NotificationState {
 export const initialNotificationState: NotificationState = {
 	activeCampaignId: null,
 	filters: defaultNotificationFilters,
-	page: defaultNotificationPage,
+	page: {
+		items: [],
+		number: 0,
+		size: 10,
+		totalElements: 0,
+		totalPages: 0,
+		first: true,
+		last: true,
+	},
 	loading: false,
 	loaded: false,
 	lastFetched: null,
@@ -32,10 +41,10 @@ export const initialNotificationState: NotificationState = {
 @Injectable()
 export class NotificationsStateService implements OnDestroy {
 	private readonly stateKey = 'kien-notify-web:state:notifications';
-	private readonly stateService = inject(StateService);
-	readonly state$ = this.stateService.watch<NotificationState>(this.stateKey).pipe(map((state) => state ?? createInitialNotificationState()));
+	readonly state$;
 
-	constructor() {
+	constructor(private readonly stateService: StateService) {
+		this.state$ = this.stateService.watch<NotificationState>(this.stateKey).pipe(map((state) => state ?? createInitialNotificationState()));
 		if (!this.stateService.get<NotificationState>(this.stateKey)) {
 			this.stateService.set(this.stateKey, createInitialNotificationState());
 		}
@@ -116,7 +125,15 @@ function createInitialNotificationState(): NotificationState {
 	return {
 		activeCampaignId: null,
 		filters: { ...defaultNotificationFilters },
-		page: { ...defaultNotificationPage },
+		page: {
+			items: [],
+			number: 0,
+			size: 10,
+			totalElements: 0,
+			totalPages: 0,
+			first: true,
+			last: true,
+		},
 		loading: false,
 		loaded: false,
 		lastFetched: null,

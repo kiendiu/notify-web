@@ -1,7 +1,8 @@
-import { Injectable, OnDestroy, inject } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { map } from 'rxjs';
 import { StateService } from '../../core/stores/state/state.service';
-import { CampaignPage, CampaignSearchFilters, defaultCampaignFilters, defaultCampaignPage } from '../models/campaigns.model';
+import { CampaignPage } from '../models/campaigns.model';
+import { CampaignSearchFilters, defaultCampaignFilters } from '../params/campaigns.params';
 
 export interface CampaignState {
 	filters: CampaignSearchFilters;
@@ -14,7 +15,15 @@ export interface CampaignState {
 
 export const initialCampaignState: CampaignState = {
 	filters: defaultCampaignFilters,
-	page: defaultCampaignPage,
+	page: {
+		items: [],
+		number: 0,
+		size: 10,
+		totalElements: 0,
+		totalPages: 0,
+		first: true,
+		last: true,
+	},
 	loading: false,
 	loaded: false,
 	lastFetched: null,
@@ -24,10 +33,10 @@ export const initialCampaignState: CampaignState = {
 @Injectable()
 export class CampaignsStateService {
 	private readonly stateKey = 'kien-notify-web:state:campaigns';
-	private readonly stateService = inject(StateService);
-	readonly state$ = this.stateService.watch<CampaignState>(this.stateKey).pipe(map((state) => state ?? createInitialCampaignState()));
+	readonly state$;
 
-	constructor() {
+	constructor(private readonly stateService: StateService) {
+		this.state$ = this.stateService.watch<CampaignState>(this.stateKey).pipe(map((state) => state ?? createInitialCampaignState()));
 		if (!this.stateService.get<CampaignState>(this.stateKey)) {
 			this.stateService.set(this.stateKey, createInitialCampaignState());
 		}
@@ -69,7 +78,15 @@ export class CampaignsStateService {
 function createInitialCampaignState(): CampaignState {
 	return {
 		filters: { ...defaultCampaignFilters },
-		page: { ...defaultCampaignPage },
+		page: {
+			items: [],
+			number: 0,
+			size: 10,
+			totalElements: 0,
+			totalPages: 0,
+			first: true,
+			last: true,
+		},
 		loading: false,
 		loaded: false,
 		lastFetched: null,

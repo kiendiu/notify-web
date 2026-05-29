@@ -52,7 +52,7 @@
   <main class="dashboard-content">
     <div class="tab-content">
       <!-- Recent activities removed -->
-      <app-campaigns></app-campaigns>
+      <ng-container *ngComponentOutlet="campaignsComponent"></ng-container>
       <!-- <app-campaigns #campaignShell></app-campaigns> -->
     </div>
   </main>

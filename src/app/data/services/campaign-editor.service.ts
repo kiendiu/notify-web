@@ -1,24 +1,27 @@
-import { Injectable, inject } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
+import { API_ENGINE, ApiEngine } from '../../core/stores/api/api.engine.interface';
 import { Endpoint } from '../../core/constants/endpoint';
 
 import {
     CampaignChannel,
-    CampaignCreateRequest,
-    CampaignCreateResponse,
     CampaignTargetType,
 } from '../../managements/models/campaigns.model';
 
 import {
+    CampaignCreateRequest,
+    CampaignCreateResponse,
+} from '../../managements/dtos/campaigns.dto';
+
+import {
     TemplateDto,
     UsersSearchResponse,
-} from '../../managements/states/campaign-editor.state';
+} from '../../managements/dtos/campaign-editor.dto';
 
 @Injectable()
 export class CampaignEditorService {
-    private readonly apiEngine = inject(API_ENGINE);
+    constructor(@Inject(API_ENGINE) private readonly apiEngine: ApiEngine) {}
 
     getTemplates(): Observable<TemplateDto[]> {
         return this.apiEngine.get<TemplateDto[]>(

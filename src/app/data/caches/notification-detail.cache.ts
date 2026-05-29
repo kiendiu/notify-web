@@ -1,13 +1,13 @@
-import { Injectable, inject } from '@angular/core';
-import { CACHE_ENGINE } from '../../core/stores/cache/cache.engine';
-import { NotificationDetailsResponse } from '../../managements/models/notifications.model';
+import { Inject, Injectable } from '@angular/core';
+import { CACHE_ENGINE, CacheEngine } from '../../core/stores/cache/cache.engine';
+import { NotificationDetailsResponse } from '../../managements/dtos/notifications.dto';
 
 export const NOTIFICATION_DETAIL_SCOPE = 'notification.detail';
 export const NOTIFICATION_DETAIL_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class NotificationDetailCache {
-  private readonly cacheEngine = inject(CACHE_ENGINE);
+  constructor(@Inject(CACHE_ENGINE) private readonly cacheEngine: CacheEngine) {}
 
   getNotificationDetails(notificationId: string | number): NotificationDetailsResponse | null {
     const cache = this.cacheEngine.get<NotificationDetailsResponse>(this.buildNotificationDetailCacheKey(notificationId));

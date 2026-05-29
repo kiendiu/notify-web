@@ -1,13 +1,15 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../data/services/auth.service';
-import { AuthPayload } from '../models/auth.model';
+import { AuthPayload } from '../dtos/auth-request.dto';
 import { AuthStateService } from '../states/login.state';
 
 @Injectable()
 export class AuthQuery {
-	private readonly authService = inject(AuthService);
-	private readonly authState = inject(AuthStateService);
+	constructor(
+		private readonly authService: AuthService,
+		private readonly authState: AuthStateService,
+	) {}
 
 	login(payload: AuthPayload): void {
 		this.authState.setLoading(true);

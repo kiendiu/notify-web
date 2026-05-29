@@ -1,70 +1,142 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CampaignNotificationSummary, NotificationDeviceDetail } from '../../../managements/models/notifications.model';
-import { NotificationDetailController } from './notification-detail.controller';
 
 @Component({
 	selector: 'app-notification-detail',
 	standalone: true,
 	imports: [CommonModule],
-	providers: [NotificationDetailController],
 	templateUrl: './notification-detail.html',
 	styleUrl: './notification-detail.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NotificationDetailComponent {
-	private readonly notificationDetailController = inject(NotificationDetailController);
+	@Input('selectedNotification') selectedNotificationValue: CampaignNotificationSummary | null = null;
+	@Input('notificationDetails') notificationDetailsValue: NotificationDeviceDetail[] = [];
+	@Input('notificationDetailsLoading') notificationDetailsLoadingValue = false;
+	@Input('notificationDetailsErrorMessage') notificationDetailsErrorMessageValue: string | null = null;
+	@Input('retryLoading') retryLoadingValue = false;
+	@Input('retryError') retryErrorValue: string | null = null;
+	@Input('retryingDeviceId') retryingDeviceIdValue: string | null = null;
+	@Input('close') closeFn: () => void = () => {};
+	@Input('retry') retryFn: () => void = () => {};
+	@Input('retryDevice') retryDeviceFn: (detail: NotificationDeviceDetail) => void = () => {};
 
-	readonly selectedNotification = input<CampaignNotificationSummary | null>(null);
-	readonly notificationDetails = input<NotificationDeviceDetail[]>([]);
-	readonly notificationDetailsLoading = input(false);
-	readonly notificationDetailsErrorMessage = input<string | null>(null);
-	readonly retryLoading = input(false);
-	readonly retryError = input<string | null>(null);
-	readonly retryingDeviceId = input<string | null>(null);
+	selectedNotification(): CampaignNotificationSummary | null {
+		return this.selectedNotificationValue;
+	}
 
-	readonly close = output<void>();
-	readonly retry = output<void>();
-	readonly retryDevice = output<NotificationDeviceDetail>();
+	notificationDetails(): NotificationDeviceDetail[] {
+		return this.notificationDetailsValue;
+	}
+
+	notificationDetailsLoading(): boolean {
+		return this.notificationDetailsLoadingValue;
+	}
+
+	notificationDetailsErrorMessage(): string | null {
+		return this.notificationDetailsErrorMessageValue;
+	}
+
+	retryLoading(): boolean {
+		return this.retryLoadingValue;
+	}
+
+	retryError(): string | null {
+		return this.retryErrorValue;
+	}
+
+	retryingDeviceId(): string | null {
+		return this.retryingDeviceIdValue;
+	}
 
 	formatDate(value: string | null | undefined): string {
-		return this.notificationDetailController.formatDate(value);
+		if (!value) {
+			return '-';
+		}
+		return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 	}
 
 	getDisplayChannel(channel: string): string {
-		return this.notificationDetailController.getDisplayChannel(channel);
+		const channels = this.getChannelValues(channel);
+		if (channels.length === 0) {
+			return '-';
+		}
+		return channels.map((value) => (value === 'PUSH' ? 'Push' : value === 'EMAIL' ? 'Email' : value === 'SMS' ? 'Message' : value)).join(', ');
 	}
 
 	getNotificationDestination(detail: NotificationDeviceDetail): string {
-		return this.notificationDetailController.getNotificationDestination(detail);
+		return detail.address ?? detail.target ?? '-';
 	}
 
 	getNotificationRetryText(detail: NotificationDeviceDetail): string {
-		return this.notificationDetailController.getNotificationRetryText(detail);
+		return detail.retryCount.toString();
 	}
 
 	getNotificationStatusText(status: string): string {
-		return this.notificationDetailController.getNotificationStatusText(status);
+		const normalized = status.toUpperCase();
+		switch (normalized) {
+			case 'SENT': return 'Đã gửi';
+			case 'DELIVERED': return 'Đã gửi';
+			case 'PENDING': return 'Đang chờ';
+			case 'FAILED': return 'Thất bại';
+			default: return status;
+		}
 	}
 
 	getStatusDotColor(status: string): string {
-		return this.notificationDetailController.getStatusDotColor(status);
+		const normalized = status.toUpperCase();
+		switch (normalized) {
+			case 'SENT': return '#10b981';
+			case 'DELIVERED': return '#10b981';
+			case 'FAILED': return '#ef4444';
+			case 'PENDING': return '#f59e0b';
+			default: return '#cbd5e1';
+		}
 	}
 
 	getStatusTextStyleColor(status: string): string {
-		return this.notificationDetailController.getStatusTextStyleColor(status);
+		const normalized = status.toUpperCase();
+		switch (normalized) {
+			case 'SENT': return '#047857';
+			case 'DELIVERED': return '#047857';
+			case 'FAILED': return '#dc2626';
+			case 'PENDING': return '#b45309';
+			default: return '#475569';
+		}
 	}
 
 	trackByDeviceDetailId(_: number, detail: NotificationDeviceDetail): number {
-		return this.notificationDetailController.trackByDeviceDetailId(_, detail);
+		return detail.id;
+	}
+
+	isFailedStatus(status: string | undefined): boolean {
+		return status?.toUpperCase() === 'FAILED';
 	}
 
 	isRetryingDevice(detail: NotificationDeviceDetail): boolean {
-		return this.notificationDetailController.isRetryingDevice(detail, this.retryingDeviceId());
+		if (!this.retryingDeviceIdValue) {
+			return false;
+		}
+		return (detail.deviceId ?? String(detail.id)) === this.retryingDeviceIdValue;
 	}
 
-	onClose(): void { this.close.emit(); }
-	onRetry(): void { this.retry.emit(); }
-	onRetryDevice(detail: NotificationDeviceDetail): void { this.retryDevice.emit(detail); }
-	isFailedStatus(status: string | undefined): boolean { return this.notificationDetailController.isFailedStatus(status); }
+	onClose(): void {
+		this.closeFn();
+	}
+
+	onRetry(): void {
+		this.retryFn();
+	}
+
+	onRetryDevice(detail: NotificationDeviceDetail): void {
+		this.retryDeviceFn(detail);
+	}
+
+	private getChannelValues(channel: string): string[] {
+		if (!channel) {
+			return [];
+		}
+		return channel.split(',').map((item) => item.trim().toUpperCase()).filter((item) => item.length > 0);
+	}
 }

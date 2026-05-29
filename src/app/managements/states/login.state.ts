@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, inject } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { map } from 'rxjs';
 import { StateService } from '../../core/stores/state/state.service';
 
@@ -19,10 +19,10 @@ export const initialAuthState: AuthState = {
 @Injectable()
 export class AuthStateService implements OnDestroy {
 	private readonly stateKey = 'kien-notify-web:state:auth';
-	private readonly stateService = inject(StateService);
-	readonly state$ = this.stateService.watch<AuthState>(this.stateKey).pipe(map((state) => state ?? initialAuthState));
+	readonly state$;
 
-	constructor() {
+	constructor(private readonly stateService: StateService) {
+		this.state$ = this.stateService.watch<AuthState>(this.stateKey).pipe(map((state) => state ?? initialAuthState));
 		if (!this.stateService.get<AuthState>(this.stateKey)) {
 			this.stateService.set(this.stateKey, initialAuthState);
 		}

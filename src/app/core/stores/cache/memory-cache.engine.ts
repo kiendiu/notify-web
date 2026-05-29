@@ -1,10 +1,10 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { MemoryCacheStore } from './memory-cache.store';
 import { CacheEngine, CacheEntry } from './cache.engine';
 
 @Injectable({ providedIn: 'root' })
 export class MemoryCacheEngine implements CacheEngine {
-  private readonly store = inject(MemoryCacheStore);
+  constructor(private readonly store: MemoryCacheStore) {}
   private readonly prefix = 'kien-notify-web:';
 
   get<T>(key: string): CacheEntry<T> | null {

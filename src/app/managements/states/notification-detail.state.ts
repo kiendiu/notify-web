@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { NotificationDetailsResponse, normalizeNotificationDetails } from '../models/notifications.model';
+import { NotificationDetailsResponse } from '../dtos/notifications.dto';
+import { normalizeNotificationDetails } from '../mappers/notifications.mapper';
 import { CampaignNotificationSummary, NotificationDeviceDetail } from '../models/notifications.model';
 
 export interface NotificationDetailState {

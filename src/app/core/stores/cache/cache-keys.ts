@@ -1,5 +1,5 @@
-import { CampaignNotificationFilters } from '../../../managements/models/notifications.model';
-import { CampaignSearchFilters } from '../../../managements/models/campaigns.model';
+import { CampaignNotificationFilters } from '../../../managements/params/notifications.params';
+import { CampaignSearchFilters } from '../../../managements/params/campaigns.params';
 
 export const CacheScopes = {
   previewTemplates: 'preview.templates',

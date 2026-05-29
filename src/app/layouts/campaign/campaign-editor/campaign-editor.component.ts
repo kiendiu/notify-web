@@ -1,94 +1,199 @@
-import { ChangeDetectionStrategy, Component, Input, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { CampaignCreateResponse } from '../../../managements/models/campaigns.model';
-import { CampaignEditorController } from './campaign-editor.controller';
+import { CampaignCreateResponse } from '../../../managements/dtos/campaigns.dto';
+import { CampaignEditorQuery } from '../../../managements/queries/campaign-editor.query';
+import { TemplateDto, UserDto } from '../../../managements/dtos/campaign-editor.dto';
+import { CampaignEditorState } from '../../../managements/states/campaign-editor.state';
 
 @Component({
-    selector: 'app-campaign-editor',
-    standalone: true,
-    imports: [CommonModule],
-    providers: [CampaignEditorController],
-    templateUrl: './campaign-editor.html',
-    styleUrl: './campaign-editor.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
+	selector: 'app-campaign-editor',
+	standalone: true,
+	imports: [CommonModule],
+	templateUrl: './campaign-editor.html',
+	styleUrl: './campaign-editor.scss',
+	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CampaignEditorComponent implements OnInit {
-    private readonly campaignEditorController = inject(CampaignEditorController);
+	constructor(
+		readonly formService: CampaignEditorState,
+		private readonly campaignQuery: CampaignEditorQuery,
+	) {}
 
-    @Input() onBack: (() => void) | null = null;
+	@Input() onBack: (() => void) | null = null;
 
-    private _onCreated: ((campaign: CampaignCreateResponse) => void) | null = null;
+	private onCreatedCallback: ((campaign: CampaignCreateResponse) => void) | null = null;
 
-    @Input()
-    set onCreated(value: ((campaign: CampaignCreateResponse) => void) | null) {
-        this._onCreated = value;
-        this.campaignEditorController.setOnCreatedCallback(value);
-    }
+	@Input()
+	set onCreated(value: ((campaign: CampaignCreateResponse) => void) | null) {
+		this.onCreatedCallback = value;
+	}
 
-    get onCreated(): ((campaign: CampaignCreateResponse) => void) | null {
-        return this._onCreated;
-    }
+	get onCreated(): ((campaign: CampaignCreateResponse) => void) | null {
+		return this.onCreatedCallback;
+	}
 
-    readonly formService = this.campaignEditorController.formService;
-    readonly pushPreview = this.campaignEditorController.pushPreview;
-    readonly emailPreview = this.campaignEditorController.emailPreview;
-    readonly templates = this.campaignEditorController.templates;
-    readonly users = this.campaignEditorController.users;
-    readonly filteredTemplates = this.campaignEditorController.filteredTemplates;
-    readonly filteredUsers = this.campaignEditorController.filteredUsers;
-    readonly selectedChannelsLabel = this.campaignEditorController.selectedChannelsLabel;
-    readonly selectedRecipientNamesLabel = this.campaignEditorController.selectedRecipientNamesLabel;
+	readonly pushPreview = () => this.formService.pushPreview();
+	readonly emailPreview = () => this.formService.emailPreview();
+	readonly templates = () => this.formService.templates();
+	readonly users = () => this.formService.users();
+	readonly filteredTemplates = () => {
+		const query = this.formService.templateSearch().trim().toLowerCase();
+		if (!query) {
+			return this.templates();
+		}
 
-    ngOnInit(): void {
-        this.campaignEditorController.ngOnInit();
-    }
+		return this.templates().filter((template: TemplateDto) => {
+			const haystack = [template.templateName, template.subject ?? '', template.content ?? '']
+				.join(' ')
+				.toLowerCase();
+			return haystack.includes(query);
+		});
+	};
 
-    handleBack(): void {
-        this.onBack?.();
-    }
+	readonly filteredUsers = () => {
+		const query = this.formService.userSearch().trim().toLowerCase();
+		if (!query) {
+			return this.users();
+		}
 
-    onSubmitCampaign(): void {
-        this.campaignEditorController.onSubmitCampaign();
-    }
+		return this.users().filter((user: UserDto) => (user.name + ' ' + user.email).toLowerCase().includes(query));
+	};
 
-    onCampaignNameInput(event: Event): void {
-        this.campaignEditorController.onCampaignNameInput(event);
-    }
+	readonly selectedChannelsLabel = () => this.getDisplayChannel(this.formService.selectedChannels().join(','));
+	readonly selectedRecipientNamesLabel = () => {
+		const usersById = new Map<number, string>(this.users().map((user: UserDto) => [user.id, user.name] as const));
+		const selectedNames = this.formService
+			.selectedUserIds()
+			.map((userId) => usersById.get(userId))
+			.filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
 
-    onTargetTypeChange(event: Event): void {
-        this.campaignEditorController.onTargetTypeChange(event);
-    }
+		return selectedNames.length > 0 ? selectedNames.join(', ') : `${this.formService.selectedUserIds().length} người đã chọn`;
+	};
 
-    onRatePerHourInput(event: Event): void {
-        this.campaignEditorController.onRatePerHourInput(event);
-    }
+	ngOnInit(): void {
+		this.formService.setTemplatesLoading(true);
+		this.formService.setErrorMessage(null);
 
-    onUserSearchInput(event: Event): void {
-        this.campaignEditorController.onUserSearchInput(event);
-    }
+		this.campaignQuery.loadTemplates().subscribe({
+			next: (templates) => {
+				this.formService.setTemplates(templates);
+			},
+			error: (error: unknown) => {
+				this.formService.setTemplatesLoading(false);
+				this.formService.setErrorMessage(error instanceof Error ? error.message : 'Không thể tải mẫu. Vui lòng thử lại.');
+			},
+		});
+	}
 
-    onTemplateSearchInput(event: Event): void {
-        this.campaignEditorController.onTemplateSearchInput(event);
-    }
+	handleBack(): void {
+		this.onBack?.();
+	}
 
-    onPushTitleInput(event: Event): void {
-        this.campaignEditorController.onPushTitleInput(event);
-    }
+	onSubmitCampaign(): void {
+		this.formService.setIsSubmitting(true);
+		this.formService.setSubmitError('');
+		this.formService.setSubmitSuccess(null);
 
-    onPushBodyInput(event: Event): void {
-        this.campaignEditorController.onPushBodyInput(event);
-    }
+		const requestData = this.formService.buildCreateRequest();
 
-    onPushActionUrlInput(event: Event): void {
-        this.campaignEditorController.onPushActionUrlInput(event);
-    }
+		this.campaignQuery.createCampaign(requestData).subscribe({
+			next: (response) => {
+				this.formService.setSubmitSuccess(response);
+				this.formService.setIsSubmitting(false);
+				this.onCreatedCallback?.(response);
+			},
+			error: (error: unknown) => {
+				this.formService.setSubmitError(error instanceof Error ? error.message : 'Không thể tạo chiến dịch. Vui lòng thử lại.');
+				this.formService.setIsSubmitting(false);
+			},
+		});
+	}
 
-    onScheduledTimeInput(event: Event): void {
-        this.campaignEditorController.onScheduledTimeInput(event);
-    }
+	onCampaignNameInput(event: Event): void {
+		this.formService.setCampaignName(this.getInputValue(event));
+	}
 
-    onEndTimeInput(event: Event): void {
-        this.campaignEditorController.onEndTimeInput(event);
-    }
+	onTargetTypeChange(event: Event): void {
+		const value = this.getInputValue(event) as 'ALL' | 'ACTIVE' | 'INACTIVE' | 'SPECIFIC';
+		this.formService.setTargetType(value);
+		this.formService.setSubmitError('');
+
+		if (value === 'SPECIFIC') {
+			this.formService.setUserSearchLoading(true);
+			this.formService.setErrorMessage(null);
+
+			this.campaignQuery.searchUsers('', 0, 100).subscribe({
+				next: (response) => {
+					this.formService.setUsersFromResponse(response);
+				},
+				error: (error: unknown) => {
+					this.formService.setUserSearchLoading(false);
+					this.formService.setErrorMessage(error instanceof Error ? error.message : 'Không thể tìm người dùng. Vui lòng thử lại.');
+				},
+			});
+			return;
+		}
+
+		this.formService.setSelectedUserIds([]);
+		this.formService.setRecipientSearchDraft('');
+	}
+
+	onRatePerHourInput(event: Event): void {
+		this.formService.setRatePerHour(Number(this.getInputValue(event)) || 0);
+	}
+
+	onUserSearchInput(event: Event): void {
+		this.formService.setUserSearch(this.getInputValue(event));
+	}
+
+	onTemplateSearchInput(event: Event): void {
+		this.formService.setTemplateSearch(this.getInputValue(event));
+	}
+
+	onPushTitleInput(event: Event): void {
+		this.formService.onPushTitleChange(this.getInputValue(event));
+	}
+
+	onPushBodyInput(event: Event): void {
+		this.formService.onPushBodyChange(this.getInputValue(event));
+	}
+
+	onPushActionUrlInput(event: Event): void {
+		this.formService.setPushActionUrl(this.getInputValue(event));
+	}
+
+	onScheduledTimeInput(event: Event): void {
+		this.formService.setScheduledTime(this.getInputValue(event));
+	}
+
+	onEndTimeInput(event: Event): void {
+		this.formService.setEndTime(this.getInputValue(event));
+	}
+
+	private getDisplayChannel(channel: string): string {
+		const channels = this.getChannelValues(channel);
+		if (channels.length === 0) {
+			return '-';
+		}
+
+		return channels
+			.map((value) => (value === 'PUSH' ? 'Push' : value === 'EMAIL' ? 'Email' : value === 'SMS' ? 'Message' : value))
+			.join(', ');
+	}
+
+	private getChannelValues(channel: string): string[] {
+		if (!channel) {
+			return [];
+		}
+
+		return channel
+			.split(',')
+			.map((item) => item.trim().toUpperCase())
+			.filter((item) => item.length > 0);
+	}
+
+	private getInputValue(event: Event): string {
+		return (event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null)?.value ?? '';
+	}
 }

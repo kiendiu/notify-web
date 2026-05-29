@@ -1,12 +1,12 @@
-import { Injectable, inject } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { Endpoint } from '../../core/constants/endpoint';
-import { NotificationDetailsResponse } from '../../managements/models/notifications.model';
-import { API_ENGINE } from '../../core/stores/api/api.engine.interface';
+import { NotificationDetailsResponse } from '../../managements/dtos/notifications.dto';
+import { API_ENGINE, ApiEngine } from '../../core/stores/api/api.engine.interface';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class NotificationDetailService {
-  private readonly apiEngine = inject(API_ENGINE);
+  constructor(@Inject(API_ENGINE) private readonly apiEngine: ApiEngine) {}
 
   getNotificationDetails(notificationId: string | number): Observable<NotificationDetailsResponse> {
     return this.apiEngine.get<NotificationDetailsResponse>(Endpoint.CAMPAIGNS.NOTIFICATION_DETAILS(notificationId));

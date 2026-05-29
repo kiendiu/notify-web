@@ -1,13 +1,13 @@
-import { Injectable, inject } from '@angular/core';
-import { CACHE_ENGINE } from '../../core/stores/cache/cache.engine';
-import { TemplateDto, UsersSearchResponse } from '../../managements/states/campaign-editor.state';
+import { Inject, Injectable } from '@angular/core';
+import { CACHE_ENGINE, CacheEngine } from '../../core/stores/cache/cache.engine';
+import { TemplateDto, UsersSearchResponse } from '../../managements/dtos/campaign-editor.dto';
 
 export const CAMPAIGN_EDITOR_SCOPE = 'campaign.editor.preview';
 export const CAMPAIGN_EDITOR_TTL_MS = 5 * 60 * 1000;
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class CampaignEditorCache {
-	private readonly cacheEngine = inject(CACHE_ENGINE);
+	constructor(@Inject(CACHE_ENGINE) private readonly cacheEngine: CacheEngine) {}
 
 	getTemplates(): TemplateDto[] | null {
 		const cache = this.cacheEngine.get<TemplateDto[]>(

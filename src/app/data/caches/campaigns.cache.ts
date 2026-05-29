@@ -1,6 +1,7 @@
-import { Injectable, inject } from '@angular/core';
-import { CACHE_ENGINE } from '../../core/stores/cache/cache.engine';
-import { CampaignSearchFilters, CampaignSearchResponse } from '../../managements/models/campaigns.model';
+import { Inject, Injectable } from '@angular/core';
+import { CACHE_ENGINE, CacheEngine } from '../../core/stores/cache/cache.engine';
+import { CampaignSearchResponse } from '../../managements/dtos/campaigns.dto';
+import { CampaignSearchFilters } from '../../managements/params/campaigns.params';
 
 export const CAMPAIGNS_SCOPE = 'campaigns.list';
 export const CAMPAIGNS_TTL_MS = 60 * 1000; // 1 minute
@@ -10,9 +11,9 @@ export interface CampaignsCacheRecord<T> {
   fetchedAt: number;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class CampaignsCache {
-  private readonly cacheEngine = inject(CACHE_ENGINE);
+  constructor(@Inject(CACHE_ENGINE) private readonly cacheEngine: CacheEngine) {}
 
   getCampaigns(filters: CampaignSearchFilters): CampaignsCacheRecord<CampaignSearchResponse> | null {
     const cache = this.cacheEngine.get<CampaignSearchResponse>(this.buildCampaignsCacheKey(filters));

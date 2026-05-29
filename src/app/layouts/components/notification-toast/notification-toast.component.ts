@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { NotificationService, NotificationToastStatus } from './notification-toast.service';
 
 @Component({
@@ -10,9 +10,11 @@ import { NotificationService, NotificationToastStatus } from './notification-toa
 	styleUrl: './notification-toast.component.scss',
 })
 export class NotificationToastComponent {
-	private readonly notificationService = inject(NotificationService);
+	constructor(private readonly notificationService: NotificationService) {}
 
-	readonly toast = this.notificationService.toast;
+	get toast() {
+		return this.notificationService.toast;
+	}
 
 	handleToastClick(): void {
 		const current = this.toast();

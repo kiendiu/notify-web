@@ -1,4 +1,4 @@
-import { effect, Injectable, Injector, WritableSignal, inject } from '@angular/core';
+import { effect, Injectable, Injector, WritableSignal } from '@angular/core';
 import { StateService } from './state.service';
 
 export interface UiViewStateBinding<TView extends string, TSelected> {
@@ -15,7 +15,7 @@ export interface UiViewStateBinding<TView extends string, TSelected> {
 @Injectable()
 export class UiStateService {
   private readonly prefix = 'kien-notify-web:ui:';
-  private readonly stateService = inject(StateService);
+  constructor(private readonly stateService: StateService) {}
 
   get<T>(key: string): T | null {
     return this.stateService.get<T>(this.storageKey(key));

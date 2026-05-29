@@ -1,15 +1,18 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, of, tap } from 'rxjs';
 import { CampaignEditorCache } from '../../data/caches/campaign-editor.cache';
 import { CampaignEditorService } from '../../data/services/campaign-editor.service';
-import { CampaignCreateRequest, CampaignCreateResponse } from '../models/campaigns.model';
-import { CampaignEditorState, TemplateDto, UsersSearchResponse } from '../states/campaign-editor.state';
+import { CampaignCreateRequest, CampaignCreateResponse } from '../dtos/campaigns.dto';
+import { TemplateDto, UsersSearchResponse } from '../dtos/campaign-editor.dto';
+import { CampaignEditorState } from '../states/campaign-editor.state';
 
 @Injectable()
 export class CampaignEditorQuery {
-    private readonly campaignEditorCache = inject(CampaignEditorCache);
-    private readonly campaignEditorApiService = inject(CampaignEditorService);
-    private readonly campaignEditorState = inject(CampaignEditorState);
+    constructor(
+        private readonly campaignEditorCache: CampaignEditorCache,
+        private readonly campaignEditorApiService: CampaignEditorService,
+        private readonly campaignEditorState: CampaignEditorState,
+    ) {}
 
     loadTemplates(): Observable<TemplateDto[]> {
         const cachedTemplates = this.campaignEditorCache.getTemplates();

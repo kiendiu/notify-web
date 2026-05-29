@@ -1,8 +1,12 @@
-import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LoginController } from './login.controller';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AuthService } from '../../data/services/auth.service';
+import { AuthPayload } from '../../managements/dtos/auth-request.dto';
 import { AuthQuery } from '../../managements/queries/auth.query';
 import { AuthStateService } from '../../managements/states/login.state';
+import { SessionKeyService } from '../../core/auth/services/session-key.service';
 
 declare global {
   interface Window {
@@ -13,21 +17,36 @@ declare global {
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule],
-  providers: [LoginController, AuthQuery, AuthStateService],
+  providers: [AuthQuery, AuthStateService],
   templateUrl: './login.html',
   styleUrl: './login.scss'
 })
 export class LoginComponent implements OnInit {
   @ViewChild('googleButtonContainer', { static: false }) googleButtonContainer!: ElementRef;
 
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly loginController = inject(LoginController);
+  constructor(
+    private readonly destroyRef: DestroyRef,
+    private readonly router: Router,
+    private readonly authService: AuthService,
+    private readonly authQuery: AuthQuery,
+    private readonly authState: AuthStateService,
+    private readonly sessionKeyService: SessionKeyService,
+  ) {}
 
-  readonly isLoading = this.loginController.isLoading;
-  readonly errorMessage = this.loginController.errorMessage;
+  readonly isLoading = () => this.authState.getState().isLoading;
+  readonly errorMessage = () => this.authState.getState().errorMessage;
 
   ngOnInit(): void {
-    this.loginController.init(this.destroyRef);
+    this.authState.state$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((state) => {
+      if (state.isAuthenticated) {
+        this.router.navigate(['/dashboard']);
+      }
+    });
+
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    }
+
     this.initializeGoogleSignIn();
   }
 
@@ -63,6 +82,19 @@ export class LoginComponent implements OnInit {
   }
 
   private handleCredentialResponse(response: any): void {
-    this.loginController.handleCredentialResponse(response);
+    const payload: AuthPayload = {
+      idToken: response?.credential ?? '',
+      fcmToken: `fcm_token_${Date.now()}`,
+      deviceId: this.getDeviceId(),
+      deviceType: 'WEB',
+      deviceName: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Browser',
+      osVersion: navigator.platform,
+    };
+
+    this.authQuery.login(payload);
+  }
+
+  private getDeviceId(): string {
+    return this.sessionKeyService.getOrCreate();
   }
 }
