@@ -5,38 +5,31 @@ import { CampaignNotificationFilters } from '../params/notifications.params';
 import { CampaignNotificationPage } from '../models/notifications.model';
 import { normalizeNotificationPage } from '../mappers/notifications.mapper';
 import { NotificationsCache } from '../../data/caches/notifications.cache';
+import { CacheDataSource } from '../../core/datasources/cache.datasource';
+import { OptionCachePolicy } from '../../core/datasources/cache.datasource';
 
 @Injectable()
 export class NotificationsQuery {
 	constructor(
 		private readonly notificationService: NotificationService,
 		private readonly notificationsCache: NotificationsCache,
+		private readonly cacheDataSource: CacheDataSource,
 	) {}
 
 	loadNotifications(
 		campaignId: string | number,
 		filters: CampaignNotificationFilters,
-		options?: { forceRefresh?: boolean },
+		policy: OptionCachePolicy = 'network-first',
 	): Observable<CampaignNotificationPage> {
-		if (options?.forceRefresh) {
-			return this.notificationService.getCampaignNotifications(campaignId, filters).pipe(
-				tap((response) => {
-					this.notificationsCache.setCampaignNotifications(campaignId, filters, response);
-				}),
-				map((response) => normalizeNotificationPage(response)),
-			);
-		}
+		const key = this.notificationsCache.buildNotificationsCacheKey(campaignId, filters);
+		const cached = this.notificationsCache.peekCampaignNotifications(campaignId, filters);
+		const network$ = this.notificationService.getCampaignNotifications(campaignId, filters).pipe(
+			tap((response) => this.notificationsCache.setCampaignNotifications(campaignId, filters, response)),
+			map((response) => ({ value: response, fetchedAt: Date.now() })),
+		);
 
-		const cached = this.notificationsCache.getCampaignNotifications(campaignId, filters);
-		if (cached) {
-			return of(normalizeNotificationPage(cached));
-		}
-
-		return this.notificationService.getCampaignNotifications(campaignId, filters).pipe(
-			tap((response) => {
-				this.notificationsCache.setCampaignNotifications(campaignId, filters, response);
-			}),
-			map((response) => normalizeNotificationPage(response)),
+		return this.cacheDataSource.query(key, cached, network$, policy).pipe(
+			map((r) => normalizeNotificationPage(r.value)),
 		);
 	}
 

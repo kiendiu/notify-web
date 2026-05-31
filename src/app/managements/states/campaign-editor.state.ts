@@ -227,6 +227,10 @@ export class CampaignEditorState
 		return this.getState().userSearch;
 	}
 
+	usersLoaded(): boolean {
+		return this.getState().usersLoaded;
+	}
+
 	isSpecificTarget(): boolean {
 		return this.targetType() === 'SPECIFIC';
 	}
@@ -368,6 +372,7 @@ export class CampaignEditorState
 
 	setTemplatesLoading(loading: boolean): void {
 		this.patch({ templatesLoading: loading });
+		this.clearPreview();
 	}
 
 	setUsersFromResponse(response: UsersSearchResponse): void {

@@ -75,7 +75,7 @@ export class CampaignEditorComponent implements OnInit {
 		this.formService.setTemplatesLoading(true);
 		this.formService.setErrorMessage(null);
 
-		this.campaignQuery.loadTemplates().subscribe({
+		this.campaignQuery.loadTemplates('cache-first').subscribe({
 			next: (templates) => {
 				this.formService.setTemplates(templates);
 			},
@@ -120,18 +120,20 @@ export class CampaignEditorComponent implements OnInit {
 		this.formService.setSubmitError('');
 
 		if (value === 'SPECIFIC') {
-			this.formService.setUserSearchLoading(true);
-			this.formService.setErrorMessage(null);
+				if (!this.formService.usersLoaded()) {
+					this.formService.setUserSearchLoading(true);
+					this.formService.setErrorMessage(null);
 
-			this.campaignQuery.searchUsers('', 0, 100).subscribe({
-				next: (response) => {
-					this.formService.setUsersFromResponse(response);
-				},
-				error: (error: unknown) => {
-					this.formService.setUserSearchLoading(false);
-					this.formService.setErrorMessage(error instanceof Error ? error.message : 'Không thể tìm người dùng. Vui lòng thử lại.');
-				},
-			});
+					this.campaignQuery.searchUsers('', 0, 100, 'cache-first').subscribe({
+						next: (response) => {
+							this.formService.setUsersFromResponse(response);
+						},
+						error: (error: unknown) => {
+							this.formService.setUserSearchLoading(false);
+							this.formService.setErrorMessage(error instanceof Error ? error.message : 'Không thể tìm người dùng. Vui lòng thử lại.');
+						},
+					});
+				}
 			return;
 		}
 

@@ -19,6 +19,15 @@ export class NotificationDetailCache {
     return cache!.value;
   }
 
+  /**
+   * Peek notification details without enforcing TTL freshness.
+   */
+  peekNotificationDetails(notificationId: string | number): { value: NotificationDetailsResponse; fetchedAt: number } | null {
+    const cache = this.cacheEngine.get<NotificationDetailsResponse>(this.buildNotificationDetailCacheKey(notificationId));
+    if (!cache) return null;
+    return { value: cache.value, fetchedAt: cache.fetchedAt };
+  }
+
   setNotificationDetails(notificationId: string | number, details: NotificationDetailsResponse): void {
     this.cacheEngine.set(this.buildNotificationDetailCacheKey(notificationId), details);
   }

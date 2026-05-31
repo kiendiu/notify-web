@@ -26,6 +26,15 @@ export class CampaignEditorCache {
 		return cache?.value ?? null;
 	}
 
+	/**
+	 * Peek templates without enforcing TTL freshness.
+	 */
+	peekTemplates(): { value: TemplateDto[]; fetchedAt: number } | null {
+		const cache = this.cacheEngine.get<TemplateDto[]>(this.buildTemplatesKey());
+		if (!cache) return null;
+		return { value: cache.value, fetchedAt: cache.fetchedAt };
+	}
+
 	setTemplates( templates: TemplateDto[] ): void {
 		this.cacheEngine.set(
 			this.buildTemplatesKey(),
@@ -58,6 +67,21 @@ export class CampaignEditorCache {
 		return cache?.value ?? null;
 	}
 
+	/**
+	 * Peek users cache without enforcing TTL freshness.
+	 */
+	peekUsers(
+		keyword: string,
+		page: number,
+		size: number,
+	): { value: UsersSearchResponse; fetchedAt: number } | null {
+		const cache = this.cacheEngine.get<UsersSearchResponse>(
+			this.buildUsersKey(keyword, page, size),
+		);
+		if (!cache) return null;
+		return { value: cache.value, fetchedAt: cache.fetchedAt };
+	}
+
 	setUsers(
 		keyword: string,
 		page: number,
@@ -72,6 +96,16 @@ export class CampaignEditorCache {
 			),
 			response,
 		);
+	}
+
+	/** Expose templates cache key for external callers. */
+	buildTemplatesCacheKey(): string {
+		return this.buildTemplatesKey();
+	}
+
+	/** Expose users cache key for external callers. */
+	buildUsersCacheKey(keyword: string, page: number, size: number): string {
+		return this.buildUsersKey(keyword, page, size);
 	}
 
 	private buildTemplatesKey(): string {

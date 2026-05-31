@@ -27,7 +27,6 @@ import { NotificationDetailQuery } from '../../managements/queries/notification-
 import { NotificationDetailStateService } from '../../managements/states/notification-detail.state';
 import { NotificationDetailService } from '../../data/services/notification-detail.service';
 import { NotificationDetailCache } from '../../data/caches/notification-detail.cache';
-import { OptionCachePolicy } from '../../managements/policy/cache-policy';
 
 const CAMPAIGNS_SYNC_RELOAD_ACTION = '[Campaigns] Reload List';
 
@@ -100,7 +99,7 @@ export class CampaignsComponent implements OnInit {
 
 		this.searchService.getSearch().pipe(debounceTime(250), takeUntilDestroyed(this.destroyRef)).subscribe((keyword) => {
 			this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, campaignName: keyword ?? '', page: 0 });
-			this.loadCampaigns('network-first');
+			this.loadCampaigns('list');
 		});
 	}
 
@@ -145,7 +144,7 @@ export class CampaignsComponent implements OnInit {
 			return;
 		}
 		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page });
-		this.loadCampaigns('network-first');
+		this.loadCampaigns('list');
 	}
 
 	showCampaignNotifications(campaign: CampaignSummary): void {
@@ -247,12 +246,12 @@ export class CampaignsComponent implements OnInit {
 		}).join(', ');
 	}
 
-	private loadCampaigns(optionCachePolicy: OptionCachePolicy = 'network-first'): void {
+	private loadCampaigns(purpose: 'list' | 'templates' | 'detail' | 'refresh' = 'list'): void {
 		const filters = this.campaignsState.getState().filters;
 		this.campaignsState.setLoading(true);
 		this.campaignsState.setErrorMessage(null);
 
-		this.campaignsQuery.loadCampaigns(filters, optionCachePolicy).subscribe({
+		this.campaignsQuery.loadCampaigns(filters, purpose).subscribe({
 			next: (result) => {
 				const page = normalizeCampaignPage(result.value);
 				this.campaignsState.setPage(page);
@@ -271,7 +270,7 @@ export class CampaignsComponent implements OnInit {
 		this.formService.setTemplatesLoading(true);
 		this.formService.setErrorMessage(null);
 
-		this.campaignEditorQuery.loadTemplates().subscribe({
+		this.campaignEditorQuery.loadTemplates('cache-first').subscribe({
 			next: (templates) => {
 				this.formService.setTemplates(templates);
 			},
@@ -304,7 +303,7 @@ export class CampaignsComponent implements OnInit {
 
 	private reloadCampaignsFromRealtimeSync(): void {
 		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page: 0 });
-		this.loadCampaigns('network-first');
+		this.loadCampaigns('refresh');
 	}
 
 	private normalizeStatus(status: string): CampaignStatusFilter {

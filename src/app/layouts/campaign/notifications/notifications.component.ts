@@ -24,6 +24,7 @@ import { NotificationsQuery } from '../../../managements/queries/notifications.q
 import { NotificationsStateService } from '../../../managements/states/notifications.state';
 import { NotificationWsService } from '../../../core/websocket/notification-ws.service';
 import { NotificationDeviceStatusUpdateEvent, NotificationSocketEvent } from '../../../core/websocket/websocket.models';
+import { OptionCachePolicy } from '../../../core/datasources/cache.datasource';
 
 @Component({
 	selector: 'app-notifications',
@@ -104,7 +105,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 
 		this.notificationWsService.watchNotifications().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
 			if (this.campaign()) {
-				this.loadNotifications(true);
+				this.loadNotifications('network-first');
 			}
 		});
 
@@ -113,7 +114,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 				return;
 			}
 			this.notificationsState.setKeyword(keyword ?? '');
-			this.loadNotifications();
+			this.loadNotifications('network-first');
 		});
 	}
 
@@ -133,7 +134,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 			return;
 		}
 		this.notificationsState.setFiltersToFirstPage();
-		this.loadNotifications();
+		this.loadNotifications('network-first');
 	}
 
 	goToNotificationPage(page: number): void {
@@ -142,7 +143,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 			return;
 		}
 		this.notificationsState.setPageIndex(page);
-		this.loadNotifications();
+		this.loadNotifications('network-first');
 	}
 
 	updateNotificationChannel(channel: string): void {
@@ -150,7 +151,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 			return;
 		}
 		this.notificationsState.setChannel(this.normalizeNotificationChannel(channel));
-		this.loadNotifications();
+		this.loadNotifications('network-first');
 	}
 
 	updateNotificationStatus(status: string): void {
@@ -158,7 +159,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 			return;
 		}
 		this.notificationsState.setStatus(this.normalizeNotificationStatus(status));
-		this.loadNotifications();
+		this.loadNotifications('network-first');
 	}
 
 	openNotificationDetails(notification: CampaignNotificationSummary): void {
@@ -175,7 +176,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 		this.cdr.markForCheck();
 
 		if (!isSameNotification || !hasCurrentDetails) {
-			this.loadNotificationDetails(notification.id);
+			this.loadNotificationDetails(notification.id, 'cache-and-network');
 		}
 	}
 
@@ -335,7 +336,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 
 		this.notificationsState.setActiveCampaignId(String(campaign.id));
 		this.notificationsState.setFiltersToFirstPage();
-		this.loadNotifications();
+		this.loadNotifications('network-first');
 	}
 
 	private setOnBack(onBack: (() => void) | null): void {
@@ -395,10 +396,10 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 		this.cdr.markForCheck();
 	}
 
-	private loadNotificationDetails(notificationId: string | number): void {
+	private loadNotificationDetails(notificationId: string | number, policy: OptionCachePolicy = 'cache-and-network'): void {
 		this.notificationDetailState.startLoadingNotificationDetails();
 
-		this.withLifecycle(this.notificationDetailQuery.loadNotificationDetails(notificationId)).subscribe({
+		this.withLifecycle(this.notificationDetailQuery.loadNotificationDetails(notificationId, policy)).subscribe({
 			next: (response) => {
 				this.notificationDetailState.setNotificationDetailsFromResponse(response);
 				this.syncNotificationDetailComponent();
@@ -415,7 +416,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 	private refreshNotificationDetails(notificationId: string | number): void {
 		this.notificationDetailQuery.invalidateNotificationDetails(notificationId);
 
-		this.withLifecycle(this.notificationDetailQuery.loadNotificationDetails(notificationId)).subscribe({
+		this.withLifecycle(this.notificationDetailQuery.loadNotificationDetails(notificationId, 'network-first')).subscribe({
 			next: (response) => {
 				this.notificationDetailState.setNotificationDetailsFromResponse(response);
 				if (this.notificationDetailState.getState().retryingDeviceId) {
@@ -431,7 +432,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 		});
 	}
 
-	private loadNotifications(forceRefresh = false): void {
+	private loadNotifications(policy: OptionCachePolicy = 'network-first'): void {
 		const currentState = this.notificationsState.getState();
 		const campaignId = currentState.activeCampaignId;
 		if (!campaignId) {
@@ -442,7 +443,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 		this.notificationsState.setLoading(true);
 		this.notificationsState.setErrorMessage(null);
 
-		this.withLifecycle(this.notificationsQuery.loadNotifications(campaignId, filters, { forceRefresh })).subscribe({
+		this.withLifecycle(this.notificationsQuery.loadNotifications(campaignId, filters, policy)).subscribe({
 			next: (page) => {
 				this.notificationsState.setPage(page);
 				this.notificationsState.setLoaded(true);
@@ -477,7 +478,7 @@ export class NotificationsComponent implements OnInit, AfterViewInit, OnDestroy 
 			next: () => {
 				this.notificationsState.setRetryLoading(false);
 				this.notificationsState.setRetryingNotificationId(null);
-				this.loadNotifications();
+				this.loadNotifications('network-first');
 				this.syncNotificationDetailComponent();
 				this.cdr.markForCheck();
 			},

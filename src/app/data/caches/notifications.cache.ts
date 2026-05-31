@@ -23,6 +23,18 @@ export class NotificationsCache {
     return cache!.value;
   }
 
+  /**
+   * Peek campaign notifications without enforcing TTL freshness.
+   */
+  peekCampaignNotifications(
+    campaignId: string | number,
+    filters: CampaignNotificationFilters,
+  ): { value: CampaignNotificationSearchResponse; fetchedAt: number } | null {
+    const cache = this.cacheEngine.get<CampaignNotificationSearchResponse>(this.buildNotificationsCacheKey(campaignId, filters));
+    if (!cache) return null;
+    return { value: cache.value, fetchedAt: cache.fetchedAt };
+  }
+
   setCampaignNotifications(
     campaignId: string | number,
     filters: CampaignNotificationFilters,

@@ -1,1 +1,0 @@
-export type OptionCachePolicy = 'cache-first' | 'network-first' | 'cache-and-network';
