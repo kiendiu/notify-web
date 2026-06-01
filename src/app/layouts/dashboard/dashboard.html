@@ -2,7 +2,7 @@
   <header class="dashboard-header">
     <div class="header-main">
       <div class="header-left">
-        <button type="button" class="header-brand" (click)="goHome(campaignShell)">
+        <button type="button" class="header-brand" (click)="goHome()">
           <div class="title-block">
             <h1 class="header-title">Admin Notify</h1>
             <p class="header-subtitle">ENTERPRISE TIER</p>
@@ -19,6 +19,7 @@
             type="text"
             class="search-input"
             placeholder="Tìm kiếm..."
+            [value]="headerSearch()"
             (input)="onHeaderSearch($any($event.target).value)"
           />
         </div>
@@ -51,8 +52,8 @@
   <main class="dashboard-content">
     <div class="tab-content">
       <!-- Recent activities removed -->
-
-      <app-campaign #campaignShell></app-campaign>
+      <ng-container *ngComponentOutlet="campaignsComponent"></ng-container>
+      <!-- <app-campaigns #campaignShell></app-campaigns> -->
     </div>
   </main>
 

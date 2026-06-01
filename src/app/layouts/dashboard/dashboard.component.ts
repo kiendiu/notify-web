@@ -1,29 +1,36 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, AfterViewInit, ChangeDetectorRef, DestroyRef, OnInit, Type } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../services/auth.service';
-import { SearchService } from '../../services/search.service';
-import { CampaignComponent } from '../campaign/campaign.component';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AuthService } from '../../data/services/auth.service';
+import { SearchService } from '../../data/services/search.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, CampaignComponent],
+  imports: [CommonModule],
+  providers: [SearchService],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
-export class DashboardComponent implements OnInit {
-  readonly currentTab = signal<'campaigns'>('campaigns');
-  readonly showLogoutModal = signal(false);
-
-  // No recent-activities on dashboard per user request
-
+export class DashboardComponent implements OnInit, AfterViewInit {
   constructor(
-    private authService: AuthService,
-    private router: Router
+    private readonly destroyRef: DestroyRef,
+    private readonly cdr: ChangeDetectorRef,
+    private readonly authService: AuthService,
+    private readonly router: Router,
+    private readonly searchService: SearchService,
   ) {}
 
-  private readonly searchService = inject(SearchService);
+  private currentTabValue: 'campaigns' = 'campaigns';
+  private showLogoutModalValue = false;
+  private headerSearchValue = '';
+
+  campaignsComponent: Type<unknown> | null = null;
+
+  readonly currentTab = () => this.currentTabValue;
+  readonly showLogoutModal = () => this.showLogoutModalValue;
+  readonly headerSearch = () => this.headerSearchValue;
 
   ngOnInit(): void {
     if (!this.authService.isAuthenticated()) {
@@ -31,24 +38,34 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    // recent activities removed
+    void import('../campaign/campaigns.component').then((module) => {
+      this.campaignsComponent = module.CampaignsComponent;
+      this.cdr.markForCheck();
+    });
+
+    this.searchService.getSearch().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((keyword) => {
+      this.headerSearchValue = keyword ?? '';
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.selectTab('campaigns');
   }
 
   selectTab(tab: 'campaigns'): void {
-    this.currentTab.set(tab);
+    this.currentTabValue = tab;
   }
 
-  goHome(campaignShell: CampaignComponent): void {
+  goHome(): void {
     this.selectTab('campaigns');
-    campaignShell.showList();
   }
 
   openLogoutModal(): void {
-    this.showLogoutModal.set(true);
+    this.showLogoutModalValue = true;
   }
 
   closeLogoutModal(): void {
-    this.showLogoutModal.set(false);
+    this.showLogoutModalValue = false;
   }
 
   logout(): void {
@@ -57,6 +74,7 @@ export class DashboardComponent implements OnInit {
   }
 
   onHeaderSearch(keyword: string): void {
+    this.headerSearchValue = keyword ?? '';
     this.searchService.setSearch(keyword ?? '');
   }
 
