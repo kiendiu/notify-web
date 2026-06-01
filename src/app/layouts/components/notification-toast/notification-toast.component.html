@@ -1,0 +1,25 @@
+@if (toast(); as current) {
+	<div class="toast-shell">
+		<div
+			class="toast-card"
+			[class.success]="current.status === 'success'"
+			[class.error]="current.status === 'error'"
+			[class.warning]="current.status === 'warning'"
+			[class.info]="current.status === 'info'"
+			(click)="handleToastClick()"
+		>
+			<div class="toast-icon">
+				<i [ngClass]="['fas', getIcon(current.status)]"></i>
+			</div>
+
+			<div class="toast-content">
+				<div class="toast-title">{{ getTitle(current.status) }}</div>
+				<div class="toast-message">{{ current.message }}</div>
+			</div>
+
+			<button type="button" class="toast-close" (click)="handleCloseClick($event)">
+				<i class="fas fa-xmark"></i>
+			</button>
+		</div>
+	</div>
+}

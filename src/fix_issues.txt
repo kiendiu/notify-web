@@ -1,0 +1,12 @@
+x    kiểm tra lại việc lắng nghe các topic websocket
+
+x    xem lại các file cái nào cần root tránh khởi tạo mọi thứ.
+
+x    sử dụng constructor thay vì Inject
+
+x    xem chỗ nào nên sử dụng Observable hay là dùng async await.
+
+x    đổi lại nơi quản lý model params body(res, req)
+
+x    thay vì là xử lý cố định buộc phải check cache rồi mới call api thì sẽ 
+tạo một oftion kịch bản để mà controlller truyền xuống cho query biết được là ưu tiên cái gì.
