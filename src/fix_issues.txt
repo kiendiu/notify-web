@@ -8,9 +8,5 @@ x    xem chỗ nào nên sử dụng Observable hay là dùng async await.
 
 x    đổi lại nơi quản lý model params body(res, req)
 
-a    xử lý throw/try catch việc mà queries là nơi nhận kịch bản từ controller thôi.
-
-a    thay vì là xử lý cố định buộc phải check cache rồi mới call api thì sẽ 
+x    thay vì là xử lý cố định buộc phải check cache rồi mới call api thì sẽ 
 tạo một oftion kịch bản để mà controlller truyền xuống cho query biết được là ưu tiên cái gì.
-
-a    kiểm tra lại việc lưu token và key nhằm bảo mật tốt hơn.

@@ -20,12 +20,21 @@ export class AuthService {
 	private readonly authState$ = new BehaviorSubject(false);
 	private currentAccessToken: string | null = null;
 
-	login(payload: AuthPayload): Observable<AuthResponse> {
-		return this.apiEngine.post<AuthResponse>(Endpoint.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
-			tap((response) => {
-				this.setSession(response.accessToken, response.refreshToken ?? null);
-			}),
+	async login(payload: AuthPayload): Promise<AuthResponse> {
+		const response = await firstValueFrom(
+			this.apiEngine.post<AuthResponse>(
+			Endpoint.AUTH.GOOGLE_LOGIN,
+			payload,
+			{ withCredentials: true }
+			)
 		);
+
+		this.setSession(
+			response.accessToken,
+			response.refreshToken ?? null,
+		);
+
+		return response;
 	}
 
 	async logout(): Promise<void> {

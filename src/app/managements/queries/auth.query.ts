@@ -11,21 +11,22 @@ export class AuthQuery {
 		private readonly authState: AuthStateService,
 	) {}
 
-	login(payload: AuthPayload): void {
-		this.authState.setLoading(true);
-		this.authState.setErrorMessage(null);
+	async login(payload: AuthPayload): Promise<void> {
+		try {
+			this.authState.setLoading(true);
+			this.authState.setErrorMessage(null);
 
-		this.authService.login(payload).pipe(
-			finalize(() => this.authState.setLoading(false)),
-		).subscribe({
-			next: () => {
-				this.authState.setAuthenticated(true);
-			},
-			error: (error: unknown) => {
-				this.authState.setAuthenticated(false);
-				this.authState.setErrorMessage(error instanceof Error ? error.message : 'Không thể đăng nhập.');
-			},
-		});
+			await this.authService.login(payload);
+
+			this.authState.setAuthenticated(true);
+		} catch (error: unknown) {
+			this.authState.setAuthenticated(false);
+			this.authState.setErrorMessage(
+				error instanceof Error ? error.message : 'Không thể đăng nhập.',
+			);
+		} finally {
+			this.authState.setLoading(false);
+		}
 	}
 
 	logout(): void {
