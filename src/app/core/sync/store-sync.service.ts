@@ -8,7 +8,7 @@ export interface StoreSyncEnvelope {
   timestamp: number;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class StoreSyncService implements OnDestroy {
   private readonly channelName = 'kien-notify-web-store-sync';
   private readonly sourceId = crypto.randomUUID();

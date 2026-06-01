@@ -1,12 +1,12 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
-import { AuthService } from '../../services/auth.service';
-import { AuthPayload } from '../../management/models/auth.model';
-import * as AuthActions from '../../management/stores/auth/auth.actions';
-import { selectIsLoading, selectErrorMessage, selectIsAuthenticated } from '../../management/stores/auth/auth.selectors';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AuthService } from '../../data/services/auth.service';
+import { AuthPayload } from '../../managements/dtos/auth-request.dto';
+import { AuthQuery } from '../../managements/queries/auth.query';
+import { AuthStateService } from '../../managements/states/login.state';
+import { SessionKeyService } from '../../core/auth/services/session-key.service';
 
 declare global {
   interface Window {
@@ -17,57 +17,36 @@ declare global {
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule],
+  providers: [AuthQuery, AuthStateService],
   templateUrl: './login.html',
   styleUrl: './login.scss'
 })
 export class LoginComponent implements OnInit {
   @ViewChild('googleButtonContainer', { static: false }) googleButtonContainer!: ElementRef;
 
-  isLoading$: Observable<boolean>;
-  errorMessage$: Observable<string | null>;
-  isAuthenticated$: Observable<boolean>;
-  private readonly DEVICE_ID_STORAGE_KEY = 'web_device_id';
-
   constructor(
-    private authService: AuthService,
-    private router: Router,
-    private store: Store
-  ) {
-    this.initializeDeviceId();
-    this.isLoading$ = this.store.select(selectIsLoading);
-    this.errorMessage$ = this.store.select(selectErrorMessage);
-    this.isAuthenticated$ = this.store.select(selectIsAuthenticated);
-  }
+    private readonly destroyRef: DestroyRef,
+    private readonly router: Router,
+    private readonly authService: AuthService,
+    private readonly authQuery: AuthQuery,
+    private readonly authState: AuthStateService,
+    private readonly sessionKeyService: SessionKeyService,
+  ) {}
 
-  private initializeDeviceId(): void {
-    let deviceId = localStorage.getItem(  this.DEVICE_ID_STORAGE_KEY );
-    if (!deviceId) {
-      deviceId = 'WEB_DEVICE_' + Date.now();
-      localStorage.setItem(
-        this.DEVICE_ID_STORAGE_KEY,
-        deviceId,
-      );
-    }
-  }
-
-  private getDeviceId(): string {
-    const deviceId = localStorage.getItem( this.DEVICE_ID_STORAGE_KEY );
-    if (!deviceId) {
-      const newDeviceId = 'WEB_DEVICE_' + Date.now();
-      localStorage.setItem(
-        this.DEVICE_ID_STORAGE_KEY,
-        newDeviceId,
-      );
-      return newDeviceId;
-    }
-    return deviceId;
-  }
+  readonly isLoading = () => this.authState.getState().isLoading;
+  readonly errorMessage = () => this.authState.getState().errorMessage;
 
   ngOnInit(): void {
+    this.authState.state$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((state) => {
+      if (state.isAuthenticated) {
+        this.router.navigate(['/dashboard']);
+      }
+    });
+
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/dashboard']);
-      return;
     }
+
     this.initializeGoogleSignIn();
   }
 
@@ -104,13 +83,18 @@ export class LoginComponent implements OnInit {
 
   private handleCredentialResponse(response: any): void {
     const payload: AuthPayload = {
-      idToken: response.credential,
-      fcmToken: 'fcm_token_' + Date.now(),
+      idToken: response?.credential ?? '',
+      fcmToken: `fcm_token_${Date.now()}`,
       deviceId: this.getDeviceId(),
       deviceType: 'WEB',
       deviceName: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Browser',
-      osVersion: navigator.platform
+      osVersion: navigator.platform,
     };
-    this.store.dispatch(AuthActions.login({ payload }));
+
+    this.authQuery.login(payload);
+  }
+
+  private getDeviceId(): string {
+    return this.sessionKeyService.getOrCreate();
   }
 }

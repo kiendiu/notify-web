@@ -1,5 +1,5 @@
-import { CampaignSummary } from '../../management/models/campaign.model';
-import { CampaignNotificationSummary } from '../../management/models/notification.model';
+import { CampaignSummary } from '../../managements/models/campaigns.model';
+import { CampaignNotificationSummary } from '../../managements/models/notifications.model';
 import { WebSocketEnvelope } from './websocket.types';
 
 export interface NotificationSocketEventData extends CampaignNotificationSummary {
@@ -8,6 +8,14 @@ export interface NotificationSocketEventData extends CampaignNotificationSummary
 }
 
 export type NotificationSocketEvent = WebSocketEnvelope<NotificationSocketEventData>;
+
+export interface NotificationDeviceStatusUpdateEvent {
+  event: 'DEVICE_STATUS_UPDATE' | string;
+  deviceId: string;
+  status: string;
+  errorMessage?: string | null;
+  latestLogId?: number | string | null;
+}
 
 export interface CampaignSocketStats {
   id: string | number;
