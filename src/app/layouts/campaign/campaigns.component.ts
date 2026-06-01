@@ -27,6 +27,7 @@ import { NotificationDetailQuery } from '../../managements/queries/notification-
 import { NotificationDetailStateService } from '../../managements/states/notification-detail.state';
 import { NotificationDetailService } from '../../data/services/notification-detail.service';
 import { NotificationDetailCache } from '../../data/caches/notification-detail.cache';
+import { OptionCachePolicy } from '../../core/stores/cache/cache.datasource';
 
 const CAMPAIGNS_SYNC_RELOAD_ACTION = '[Campaigns] Reload List';
 
@@ -99,7 +100,7 @@ export class CampaignsComponent implements OnInit {
 
 		this.searchService.getSearch().pipe(debounceTime(250), takeUntilDestroyed(this.destroyRef)).subscribe((keyword) => {
 			this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, campaignName: keyword ?? '', page: 0 });
-			this.loadCampaigns('list');
+			this.loadCampaigns();
 		});
 	}
 
@@ -144,7 +145,7 @@ export class CampaignsComponent implements OnInit {
 			return;
 		}
 		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page });
-		this.loadCampaigns('list');
+		this.loadCampaigns();
 	}
 
 	showCampaignNotifications(campaign: CampaignSummary): void {
@@ -246,12 +247,12 @@ export class CampaignsComponent implements OnInit {
 		}).join(', ');
 	}
 
-	private loadCampaigns(purpose: 'list' | 'templates' | 'detail' | 'refresh' = 'list'): void {
+	private loadCampaigns(policy: OptionCachePolicy = 'cache-first'): void {
 		const filters = this.campaignsState.getState().filters;
 		this.campaignsState.setLoading(true);
 		this.campaignsState.setErrorMessage(null);
 
-		this.campaignsQuery.loadCampaigns(filters, purpose).subscribe({
+		this.campaignsQuery.loadCampaigns(filters, policy).subscribe({
 			next: (result) => {
 				const page = normalizeCampaignPage(result.value);
 				this.campaignsState.setPage(page);
@@ -303,7 +304,7 @@ export class CampaignsComponent implements OnInit {
 
 	private reloadCampaignsFromRealtimeSync(): void {
 		this.campaignsState.setFilters({ ...this.campaignsState.getState().filters, page: 0 });
-		this.loadCampaigns('refresh');
+		this.loadCampaigns();
 	}
 
 	private normalizeStatus(status: string): CampaignStatusFilter {

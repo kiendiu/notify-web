@@ -24,7 +24,7 @@ import { NotificationsQuery } from '../../../managements/queries/notifications.q
 import { NotificationsStateService } from '../../../managements/states/notifications.state';
 import { NotificationWsService } from '../../../core/websocket/notification-ws.service';
 import { NotificationDeviceStatusUpdateEvent, NotificationSocketEvent } from '../../../core/websocket/websocket.models';
-import { OptionCachePolicy } from '../../../core/datasources/cache.datasource';
+import { OptionCachePolicy } from '../../../core/stores/cache/cache.datasource';
 
 @Component({
 	selector: 'app-notifications',

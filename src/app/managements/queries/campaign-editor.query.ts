@@ -5,8 +5,8 @@ import { CampaignEditorService } from '../../data/services/campaign-editor.servi
 import { CampaignCreateRequest, CampaignCreateResponse } from '../dtos/campaigns.dto';
 import { TemplateDto, UsersSearchResponse } from '../dtos/campaign-editor.dto';
 import { CampaignEditorState } from '../states/campaign-editor.state';
-import { CacheDataSource } from '../../core/datasources/cache.datasource';
-import { OptionCachePolicy } from '../../core/datasources/cache.datasource';
+import { CacheDataSource } from '../../core/stores/cache/cache.datasource';
+import { OptionCachePolicy } from '../../core/stores/cache/cache.datasource';
 
 @Injectable()
 export class CampaignEditorQuery {

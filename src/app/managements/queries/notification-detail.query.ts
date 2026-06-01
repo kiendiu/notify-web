@@ -3,8 +3,8 @@ import { Observable, of, map } from 'rxjs';
 import { NotificationDetailService } from '../../data/services/notification-detail.service';
 import { NotificationDetailsResponse } from '../dtos/notifications.dto';
 import { NotificationDetailCache } from '../../data/caches/notification-detail.cache';
-import { CacheDataSource } from '../../core/datasources/cache.datasource';
-import { OptionCachePolicy } from '../../core/datasources/cache.datasource';
+import { CacheDataSource } from '../../core/stores/cache/cache.datasource';
+import { OptionCachePolicy } from '../../core/stores/cache/cache.datasource';
 
 @Injectable()
 export class NotificationDetailQuery {

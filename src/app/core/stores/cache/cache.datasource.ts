@@ -7,16 +7,6 @@ export type OptionCachePolicy = 'cache-first' | 'network-first' | 'cache-and-net
 export class CacheDataSource {
   private inflight = new Map<string, Observable<any>>();
 
-  /**
-   * Generic query helper that applies cache policies, request deduplication,
-   * stale detection and optional background refresh (stale-while-revalidate).
-   *
-   * @param key unique key to deduplicate in-flight requests
-   * @param cached optional cached record (may be stale)
-   * @param network$ network observable that must emit a CacheRecord-like object
-   * @param policy cache policy to apply
-   * @param staleTimeMs threshold (ms) to consider cached record stale for SWR
-   */
   query<T>(
     key: string,
     cached: { value: T; fetchedAt: number } | null,
@@ -48,12 +38,9 @@ export class CacheDataSource {
         if (cached && !isStale) {
           return of(cached);
         }
-
-        // if cached but stale: return cached immediately then refresh
         if (cached && isStale) {
           return concat(of(cached), makeRequest());
         }
-
         return makeRequest();
 
       case 'cache-and-network':

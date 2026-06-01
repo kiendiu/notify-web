@@ -5,8 +5,8 @@ import { CampaignNotificationFilters } from '../params/notifications.params';
 import { CampaignNotificationPage } from '../models/notifications.model';
 import { normalizeNotificationPage } from '../mappers/notifications.mapper';
 import { NotificationsCache } from '../../data/caches/notifications.cache';
-import { CacheDataSource } from '../../core/datasources/cache.datasource';
-import { OptionCachePolicy } from '../../core/datasources/cache.datasource';
+import { CacheDataSource } from '../../core/stores/cache/cache.datasource';
+import { OptionCachePolicy } from '../../core/stores/cache/cache.datasource';
 
 @Injectable()
 export class NotificationsQuery {
