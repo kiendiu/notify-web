@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { AuthKeyService } from './auth-key.service';
 import { CryptoService } from './crypto.service';
 
 type TokenVaultMessage =
@@ -13,8 +14,12 @@ export class TokenVaultService {
 	private readonly channelName = 'kien-notify-web:auth';
 	private readonly encryptedTokenStorageKey = 'knw_auth_access';
 	private readonly encryptedRefreshStorageKey = 'knw_auth_refresh';
-	private readonly encryptionKeyStorageKey = 'knw_auth_key';
 	private readonly tokenTypeStorageKey = 'knw_auth_type';
+	private readonly legacyEncryptedTokenStorageKey = 'kien-notify-web:auth:encrypted-access-token';
+	private readonly legacyEncryptedRefreshStorageKey = 'kien-notify-web:auth:encrypted-refresh-token';
+	private readonly legacyTokenTypeStorageKey = 'kien-notify-web:auth:token-type';
+	private readonly authKeyService = inject(AuthKeyService);
+
 	constructor(private readonly cryptoService: CryptoService) {
 		this.channel?.addEventListener('message', (event: MessageEvent<TokenVaultMessage>) => {
 			this.handleMessage(event.data);
@@ -33,6 +38,7 @@ export class TokenVaultService {
 		this.accessTokenChangesSubject.next(token);
 
 		if (token) {
+			this.deleteCookie(this.legacyEncryptedTokenStorageKey);
 			this.ensureSessionKey().then((sessionKey) => this.cryptoService.encrypt(token, sessionKey)).then((encryptedToken) => {
 				this.setCookie(this.encryptedTokenStorageKey, encryptedToken, 7);
 			});
@@ -46,6 +52,7 @@ export class TokenVaultService {
 	setRefreshToken(token: string | null): void {
 		this.refreshToken = token;
 		if (token) {
+			this.deleteCookie(this.legacyEncryptedRefreshStorageKey);
 			this.ensureSessionKey().then((sessionKey) => this.cryptoService.encrypt(token, sessionKey)).then((encryptedToken) => {
 				this.setCookie(this.encryptedRefreshStorageKey, encryptedToken, 30);
 			});
@@ -55,14 +62,10 @@ export class TokenVaultService {
 		this.deleteCookie(this.encryptedRefreshStorageKey);
 	}
 
-	setTokens(accessToken: string | null, refreshToken: string | null, tokenType?: string | null): void {
+	setTokens(accessToken: string | null, refreshToken: string | null): void {
 		this.setAccessToken(accessToken);
 		this.setRefreshToken(refreshToken);
-		if (tokenType) {
-			this.setCookie(this.tokenTypeStorageKey, tokenType, 30);
-		} else {
-			this.deleteCookie(this.tokenTypeStorageKey);
-		}
+		this.clearTokenTypeCookies();
 	}
 
 	getAccessToken(): string | null {
@@ -107,8 +110,8 @@ export class TokenVaultService {
 	}
 
 	restorePersistedAccessToken(): Promise<string | null> {
-		const encryptedToken = this.getCookie(this.encryptedTokenStorageKey);
-		const encryptedRefresh = this.getCookie(this.encryptedRefreshStorageKey);
+		const encryptedToken = this.getCookie(this.encryptedTokenStorageKey) ?? this.getCookie(this.legacyEncryptedTokenStorageKey);
+		const encryptedRefresh = this.getCookie(this.encryptedRefreshStorageKey) ?? this.getCookie(this.legacyEncryptedRefreshStorageKey);
 		if (!encryptedToken && !encryptedRefresh) {
 			return Promise.resolve(null);
 		}
@@ -123,20 +126,27 @@ export class TokenVaultService {
 		if (encryptedToken) {
 			promises.push(this.cryptoService.decrypt(encryptedToken, sessionKey).then((token) => {
 				this.setAccessToken(token);
+				this.deleteCookie(this.legacyEncryptedTokenStorageKey);
 			}).catch(() => {
 				this.deleteCookie(this.encryptedTokenStorageKey);
+				this.deleteCookie(this.legacyEncryptedTokenStorageKey);
 			}));
 		}
 
 		if (encryptedRefresh) {
 			promises.push(this.cryptoService.decrypt(encryptedRefresh, sessionKey).then((token) => {
 				this.refreshToken = token;
+				this.deleteCookie(this.legacyEncryptedRefreshStorageKey);
 			}).catch(() => {
 				this.deleteCookie(this.encryptedRefreshStorageKey);
+				this.deleteCookie(this.legacyEncryptedRefreshStorageKey);
 			}));
 		}
 
-		return Promise.all(promises).then(() => this.accessToken);
+		return Promise.all(promises).then(() => {
+			this.clearTokenTypeCookies();
+			return this.accessToken;
+		});
 	}
 
 	close(): void {
@@ -198,24 +208,23 @@ export class TokenVaultService {
 	private clearPersistedToken(): void {
 		this.deleteCookie(this.encryptedTokenStorageKey);
 		this.deleteCookie(this.encryptedRefreshStorageKey);
-		this.deleteCookie(this.tokenTypeStorageKey);
-		this.deleteCookie(this.encryptionKeyStorageKey);
+		this.deleteCookie(this.legacyEncryptedTokenStorageKey);
+		this.deleteCookie(this.legacyEncryptedRefreshStorageKey);
+		this.clearTokenTypeCookies();
+		this.authKeyService.clearSessionKey();
 	}
 
-	private getSessionKey(): string | null {
-		return this.getCookie(this.encryptionKeyStorageKey);
+	private clearTokenTypeCookies(): void {
+		this.deleteCookie(this.tokenTypeStorageKey);
+		this.deleteCookie(this.legacyTokenTypeStorageKey);
 	}
 
 	private ensureSessionKey(): Promise<string> {
-		const existingKey = this.getSessionKey();
-		if (existingKey) {
-			return Promise.resolve(existingKey);
-		}
+		return this.authKeyService.getOrCreateSessionKey();
+	}
 
-		return this.cryptoService.createAesKey().then((sessionKey) => {
-			this.setCookie(this.encryptionKeyStorageKey, sessionKey, 30);
-			return sessionKey;
-		});
+	private getSessionKey(): string | null {
+		return this.authKeyService.getSessionKey();
 	}
 
 	// Cookie helpers

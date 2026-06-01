@@ -23,7 +23,7 @@ export class AuthService {
 	login(payload: AuthPayload): Observable<AuthResponse> {
 		return this.apiEngine.post<AuthResponse>(Endpoint.AUTH.GOOGLE_LOGIN, payload, { withCredentials: true }).pipe(
 			tap((response) => {
-				this.setSession(response.accessToken, response.refreshToken ?? null, response.tokenType ?? null);
+				this.setSession(response.accessToken, response.refreshToken ?? null);
 			}),
 		);
 	}
@@ -47,7 +47,7 @@ export class AuthService {
 
 	refreshAccessToken(): Observable<AuthResponse> {
 		return this.apiEngine.post<AuthResponse>(Endpoint.AUTH.REFRESH_TOKEN, {}, { withCredentials: true }).pipe(
-			tap((response) => this.setSession(response.accessToken, response.refreshToken ?? null, response.tokenType ?? null)),
+			tap((response) => this.setSession(response.accessToken, response.refreshToken ?? null)),
 		);
 	}
 
@@ -74,9 +74,9 @@ export class AuthService {
 		);
 	}
 
-	private setSession(accessToken: string, refreshToken: string | null, tokenType: string | null): void {
+	private setSession(accessToken: string, refreshToken: string | null): void {
 		this.currentAccessToken = accessToken;
-		this.tokenVault.setTokens(accessToken, refreshToken, tokenType);
+		this.tokenVault.setTokens(accessToken, refreshToken);
 		this.clearLegacyAuthStorage();
 	}
 

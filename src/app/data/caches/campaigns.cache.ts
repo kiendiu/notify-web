@@ -28,11 +28,6 @@ export class CampaignsCache {
     };
   }
 
-  /**
-   * Peek cached campaigns record without enforcing TTL freshness.
-   * Useful for stale-while-revalidate flows where we want to show stale data
-   * immediately and refresh in background.
-   */
   peekCampaigns(filters: CampaignSearchFilters): CampaignsCacheRecord<CampaignSearchResponse> | null {
     const cache = this.cacheEngine.get<CampaignSearchResponse>(this.buildCampaignsCacheKey(filters));
     if (!cache) return null;
